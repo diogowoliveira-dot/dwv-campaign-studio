@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    font-family: 'Space Grotesk', sans-serif;
+    background: {{ cor_fundo }};
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .top-bar {
+    padding: 60px 60px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo-incorporadora {
+    height: 52px;
+    object-fit: contain;
+  }
+
+  .logo-empreendimento {
+    height: 140px;
+    object-fit: contain;
+  }
+
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px 60px;
+  }
+
+  .headline {
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+  }
+
+  .subtitle {
+    font-size: 32px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 48px;
+    line-height: 1.3;
+  }
+
+  .cta {
+    display: inline-block;
+    padding: 24px 64px;
+    background: {{ cor_primaria }};
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    border-radius: 16px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .event-info {
+    margin-bottom: 40px;
+    padding: 24px 40px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .event-info .date {
+    font-size: 36px;
+    font-weight: 700;
+    color: {{ cor_primaria }};
+  }
+
+  .event-info .location {
+    font-size: 24px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 8px;
+  }
+
+  .exec-block {
+    margin: 0 60px 60px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 28px 36px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: 4px;
+  }
+
+  .exec-foto {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid {{ cor_primaria }};
+    flex-shrink: 0;
+  }
+
+  .exec-divider {
+    width: 1px;
+    height: 80px;
+    background: rgba(201,169,110,0.25);
+    flex-shrink: 0;
+  }
+
+  .exec-info {
+    flex: 1;
+  }
+
+  .exec-name {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .exec-cargo {
+    font-size: 20px;
+    color: {{ cor_primaria }};
+    margin-bottom: 8px;
+  }
+
+  .exec-contato {
+    font-size: 22px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    {% if logo_incorporadora_b64 %}
+    <img src="{{ logo_incorporadora_b64 }}" class="logo-incorporadora" alt="Logo">
+    {% endif %}
+  </div>
+
+  <div class="hero">
+    {% if logo_empreendimento_b64 %}
+    <img src="{{ logo_empreendimento_b64 }}" class="logo-empreendimento" alt="{{ empreendimento }}" style="margin-bottom: 40px;">
+    {% endif %}
+
+    <div class="headline">{{ copy.headline }}</div>
+    <div class="subtitle">{{ copy.subtitulo }}</div>
+
+    {% if data_evento %}
+    <div class="event-info">
+      <div class="date">{{ data_evento }}</div>
+      {% if local_evento %}
+      <div class="location">{{ local_evento }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="cta">{{ copy.cta }}</div>
+  </div>
+
+  <div class="exec-block">
+    {% if executivo_foto_b64 %}
+    <img src="{{ executivo_foto_b64 }}" class="exec-foto" alt="{{ executivo_nome }}">
+    {% endif %}
+    <div class="exec-divider"></div>
+    <div class="exec-info">
+      <div class="exec-name">{{ executivo_nome }}</div>
+      <div class="exec-cargo">{{ executivo_cargo }}</div>
+      <div class="exec-contato">
+        {% if executivo_whatsapp %}{{ executivo_whatsapp }}<br>{% endif %}
+        {% if executivo_email %}{{ executivo_email }}{% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
