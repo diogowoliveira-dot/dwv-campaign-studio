@@ -87,23 +87,24 @@ def _extract_colors_from_html(html: str) -> dict:
         if m and not colors["primaria"]:
             colors["primaria"] = m.group(1)
 
-    # 3. Collect ALL hex colors from CSS + inline styles + color attributes
+    # 3. Collect ALL hex colors from CSS + inline styles
     if not colors["primaria"]:
         all_hex = re.findall(r'#([0-9a-fA-F]{6})\b', html)
-        # Also find rgb() colors
         for m in re.finditer(r'rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)', html):
             r_v, g_v, b_v = int(m.group(1)), int(m.group(2)), int(m.group(3))
             all_hex.append(f"{r_v:02x}{g_v:02x}{b_v:02x}")
 
         color_counts: dict = {}
         for h in all_hex:
+            h = h.lower()
             r_val, g_val, b_val = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-            # Skip near-black, near-white, greys
-            if max(r_val, g_val, b_val) < 50:
+            # Skip pure black and pure white
+            if r_val + g_val + b_val < 30:
                 continue
-            if min(r_val, g_val, b_val) > 210:
+            if r_val > 240 and g_val > 240 and b_val > 240:
                 continue
-            if abs(r_val - g_val) < 20 and abs(g_val - b_val) < 20:
+            # Skip greys (all channels similar)
+            if abs(r_val - g_val) < 10 and abs(g_val - b_val) < 10:
                 continue
             color_counts[f"#{h}"] = color_counts.get(f"#{h}", 0) + 1
         if color_counts:
@@ -190,13 +191,13 @@ async def coletar_assets(url_site: str) -> dict:
                             val = d.get(attr, "")
                             if not val:
                                 continue
-                            # srcset: take first/largest
+                            # srcset: extract all URLs
                             if attr == "srcset":
                                 parts = val.split(",")
                                 for part in parts:
                                     url = part.strip().split(" ")[0]
                                     resolved = _resolve_url(url, base_url)
-                                    if resolved:
+                                    if resolved and _is_valid_image_url(resolved):
                                         all_image_urls.append(resolved)
                                 continue
                             resolved = _resolve_url(val, base_url)
@@ -328,6 +329,18 @@ async def coletar_assets(url_site: str) -> dict:
                     break
 
             # ============================================================
+            # PHASE 2b: Prefer dark/white logo variant if site provides both
+            # ============================================================
+            # Look for explicit dark variant of logo (for dark backgrounds)
+            for img_url in all_image_urls:
+                lower = img_url.lower()
+                if ("logo" in lower and ("dark" in lower or "white" in lower or "light" in lower or "branca" in lower)):
+                    b64 = _try_download_image(img_url, min_bytes=300)
+                    if b64:
+                        assets["logo_incorporadora_b64"] = b64
+                        break
+
+            # ============================================================
             # PHASE 3: Audit logo colors for contrast
             # ============================================================
             if assets["logo_incorporadora_b64"]:
@@ -454,6 +467,17 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
         except Exception:
             pass
 
+    # Compute contrast color for primary
+    cor_p = assets["cor_primaria"]
+    try:
+        r_v = int(cor_p[1:3], 16)
+        g_v = int(cor_p[3:5], 16)
+        b_v = int(cor_p[5:7], 16)
+        luminance = (0.299 * r_v + 0.587 * g_v + 0.114 * b_v) / 255
+        cor_primaria_texto = "#000000" if luminance > 0.5 else "#FFFFFF"
+    except Exception:
+        cor_primaria_texto = "#FFFFFF"
+
     # Dados comuns para todos os templates
     dados = {
         "cliente": briefing.get("cliente", ""),
@@ -466,6 +490,7 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
         "logo_incorporadora_b64": assets["logo_incorporadora_b64"],
         "logo_empreendimento_b64": assets["logo_empreendimento_b64"],
         "cor_primaria": assets["cor_primaria"],
+        "cor_primaria_texto": cor_primaria_texto,
         "cor_fundo": assets["cor_fundo"],
         "data_evento": briefing.get("data_evento", ""),
         "local_evento": briefing.get("local_evento", ""),
