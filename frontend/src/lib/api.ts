@@ -310,6 +310,14 @@ export const campanhas = {
     }
     return request<CampanhaCompleta>(`/campanhas/${id}/gerar`, { method: "POST" });
   },
+  deletar: async (id: string): Promise<void> => {
+    if (DEMO_MODE) {
+      const idx = DEMO_CAMPANHAS.findIndex((c) => c.id === id);
+      if (idx >= 0) DEMO_CAMPANHAS.splice(idx, 1);
+      return;
+    }
+    await request(`/campanhas/${id}`, { method: "DELETE" });
+  },
   editar: async (id: string, mensagem: string, formato: string, html_atual?: string, versao_atual?: number): Promise<EditarResponse> => {
     // Tenta chamar a API Route (que usa Claude API)
     if (html_atual) {

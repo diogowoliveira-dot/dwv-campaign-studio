@@ -158,6 +158,8 @@ class LocalTable:
         # Route to correct operation
         if hasattr(self, "_insert_row"):
             return self._do_insert()
+        if hasattr(self, "_delete"):
+            return self._do_delete()
         if hasattr(self, "_updates"):
             return self._execute_update()
         return self._do_select()
@@ -239,6 +241,33 @@ class LocalTable:
                 return _Result([_row_to_dict(result)] if result else [self._insert_row])
             conn.close()
             return _Result([self._insert_row])
+
+    def delete(self):
+        self._delete = True
+        return self
+
+    def _do_delete(self):
+        conn = _get_conn()
+        ph = "%s" if USE_POSTGRES else "?"
+        params = []
+        where_clauses = []
+        for col, op, val in self._filters:
+            where_clauses.append(f"{col} {op} {ph}")
+            if not USE_POSTGRES and isinstance(val, bool):
+                params.append(int(val))
+            else:
+                params.append(val)
+        where = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+        if USE_POSTGRES:
+            cur = conn.cursor()
+            cur.execute(f"DELETE FROM {self._name}{where}", params)
+            conn.commit()
+            cur.close()
+        else:
+            conn.execute(f"DELETE FROM {self._name}{where}", params)
+            conn.commit()
+        conn.close()
+        return _Result([])
 
     def update(self, updates):
         self._updates = updates

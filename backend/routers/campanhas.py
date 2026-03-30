@@ -100,6 +100,29 @@ async def gerar(campanha_id: str, user: dict = Depends(get_current_user)):
     return resultado
 
 
+@router.delete("/{campanha_id}")
+async def deletar(campanha_id: str, user: dict = Depends(get_current_user)):
+    db = get_db()
+
+    campanha = (
+        db.table("campanhas")
+        .select("id")
+        .eq("id", campanha_id)
+        .eq("usuario_id", user["id"])
+        .single()
+        .execute()
+    )
+    if not campanha.data:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+
+    # Delete related data first (SQLite doesn't cascade like Postgres always)
+    db.table("mensagens").delete().eq("campanha_id", campanha_id).execute()
+    db.table("pecas").delete().eq("campanha_id", campanha_id).execute()
+    db.table("campanhas").delete().eq("id", campanha_id).execute()
+
+    return {"ok": True}
+
+
 @router.post("/{campanha_id}/editar", response_model=EditarResponse)
 async def editar(campanha_id: str, req: EditarRequest, user: dict = Depends(get_current_user)):
     db = get_db()
