@@ -189,52 +189,76 @@ async def analisar_site(url_site: str, url_home: str = "") -> dict:
             # Classify images and pick brand color
             image_list = "\n".join(f"{i+1}. {url}" for i, url in enumerate(all_image_urls[:25]))
 
-            ai_prompt = f"""Você é um designer especializado em branding imobiliário. Analise as informações abaixo e responda em JSON.
+            ai_prompt = f"""Você é um diretor de arte especializado em incorporadoras imobiliárias de alto padrão.
 
-SITE: {url_site}
-HOME: {url_home}
+SITE DO EMPREENDIMENTO: {url_site}
+HOME DA INCORPORADORA: {url_home}
 
-IMAGENS ENCONTRADAS NO SITE:
+LISTA DE IMAGENS ENCONTRADAS NO SITE (numere cada uma):
 {image_list}
 
-CONTEÚDO DO SITE:
+CONTEÚDO TEXTUAL DO SITE:
 {text_emp[:2000]}
 
-CORES ENCONTRADAS NO CSS DO SITE:
-{', '.join(set(re.findall(r'#[0-9a-fA-F]{6}', html_emp + html_home))[:20])}
+CORES HEX ENCONTRADAS NO CSS:
+{', '.join(set(re.findall(r'#[0-9a-fA-F]{{6}}', html_emp + html_home))[:20]) or 'Nenhuma cor encontrada no CSS'}
 
-TAREFA:
-1. FACHADA: Qual número de imagem é mais provável de ser a fachada/perspectiva do empreendimento?
-   Fachada = imagem externa do prédio/edifício. Não é planta, não é interior, não é logo.
-   Se o nome do arquivo contém números sequenciais, a primeira costuma ser a fachada principal.
+ANALISE E RESPONDA:
 
-2. COR DA MARCA: Qual é a cor primária da marca da incorporadora?
-   Analise o nome da empresa e o contexto. NÃO use verde a menos que seja claramente a cor da marca.
-   Se não há cores no CSS, analise os nomes dos arquivos de logo e o contexto visual.
-   Sites de incorporadoras de alto padrão geralmente usam: dourado, preto, azul escuro, ou a cor do logo.
-   Se o site é majoritariamente preto e branco, use dourado #C9A96E como accent.
+1. **FACHADA** — Qual número é a imagem da FACHADA/PERSPECTIVA EXTERNA do empreendimento?
+   REGRAS:
+   - Fachada = renderização ou foto EXTERNA do prédio/edifício inteiro
+   - NÃO é: logo, planta baixa, foto de interior, thumbnail, background decorativo
+   - Imagens com nome tipo "00122-nome-empreendimento-XXXX.jpg" são fotos do empreendimento — a PRIMEIRA delas geralmente é a fachada
+   - Imagens com "full_" no nome são versões grandes (preferíveis)
+   - Se houver múltiplas, escolha a que parece ser a fachada principal (geralmente a primeira da sequência)
+   - DEVE escolher uma. Se nenhuma parece ser fachada, escolha a primeira imagem grande que não seja logo.
 
-3. LOGO: Qual imagem é o logo da incorporadora? Se há versões "dark" ou "white", prefira a versão clara (para fundo escuro).
+2. **COR PRIMÁRIA DA MARCA** — Qual a cor principal da incorporadora?
+   REGRAS:
+   - Analise a HOME da incorporadora, não o empreendimento
+   - Veja os arquivos de logo: se há "logo.png" e "logo-dark.png", a marca provavelmente é clean (preto/branco)
+   - Para marcas preto/branco sem cor accent: use branco #FFFFFF como accent
+   - NÃO use cores de classes CSS utilitárias (verde de botão de WhatsApp, azul de link, etc.)
+   - A cor deve ser a que aparece como IDENTIDADE VISUAL da marca
 
-4. LOGO EMPREENDIMENTO: Há uma logo específica do empreendimento? Qual número?
+3. **LOGO PARA FUNDO ESCURO** — Qual é o logo da incorporadora para usar em fundo preto?
+   IMPORTANTE: se existem arquivos "logo-dark" e "logo" normal, o "logo-dark" é a versão BRANCA (para fundo dark). Escolha essa.
 
-Responda APENAS este JSON (sem explicações):
-{{"fachada": número_da_imagem_ou_0, "cor_primaria": "#hex", "logo": número_ou_0, "logo_emp": número_ou_0}}"""
+4. **LOGO DO EMPREENDIMENTO** — Se existe um logo específico do empreendimento (diferente do logo da incorporadora), qual número?
+
+RESPONDA APENAS ESTE JSON (sem explicação, sem markdown):
+{{"fachada": NUMERO, "cor_primaria": "#HEXCOR", "logo": NUMERO, "logo_emp": NUMERO}}"""
 
             ai_response = await _call_claude(ai_prompt, 300)
 
-            # Parse response
+            # Parse response — handle various markdown wrappers
             import json
-            # Clean markdown
-            if ai_response.startswith("```"):
-                ai_response = ai_response.split("\n", 1)[1]
-            if ai_response.endswith("```"):
-                ai_response = ai_response.rsplit("```", 1)[0]
+            clean = ai_response
+            if "```" in clean:
+                # Extract content between code fences
+                parts = clean.split("```")
+                for part in parts:
+                    part = part.strip()
+                    if part.startswith("json"):
+                        part = part[4:].strip()
+                    if part.startswith("{"):
+                        clean = part
+                        break
+            clean = clean.strip()
 
             try:
-                ai_data = json.loads(ai_response.strip())
+                ai_data = json.loads(clean)
             except json.JSONDecodeError:
-                ai_data = {}
+                # Try to find JSON in the response
+                json_match = re.search(r'\{[^}]+\}', clean)
+                if json_match:
+                    try:
+                        ai_data = json.loads(json_match.group(0))
+                    except json.JSONDecodeError:
+                        ai_data = {}
+                else:
+                    ai_data = {}
 
             if ai_data.get("cor_primaria"):
                 result["cor_primaria"] = ai_data["cor_primaria"]
