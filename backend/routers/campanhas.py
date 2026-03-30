@@ -58,15 +58,49 @@ async def obter(campanha_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
 
     executivo = db.table("executivos").select("*").eq("id", campanha.data["executivo_id"]).single().execute()
-    pecas = db.table("pecas").select("*").eq("campanha_id", campanha_id).eq("is_atual", True).execute()
+    pecas_raw = db.table("pecas").select("*").eq("campanha_id", campanha_id).eq("is_atual", True).execute()
     mensagens = db.table("mensagens").select("*").eq("campanha_id", campanha_id).order("criada_em").execute()
+
+    # Return pecas WITHOUT html (too large) — frontend loads per-piece
+    pecas_resumo = []
+    for p in (pecas_raw.data or []):
+        pecas_resumo.append({
+            "id": p["id"],
+            "formato": p["formato"],
+            "versao": p["versao"],
+            "arquivo_url": p.get("arquivo_url", ""),
+            "has_html": bool(p.get("html")),
+        })
 
     return {
         **campanha.data,
         "executivo": executivo.data,
-        "pecas": pecas.data,
+        "pecas": pecas_resumo,
         "mensagens": mensagens.data,
     }
+
+
+@router.get("/{campanha_id}/peca/{formato}")
+async def obter_peca(campanha_id: str, formato: str, user: dict = Depends(get_current_user)):
+    """Returns full HTML of a single piece — loaded on demand."""
+    db = get_db()
+
+    # Verify ownership
+    campanha = (
+        db.table("campanhas").select("id").eq("id", campanha_id)
+        .eq("usuario_id", user["id"]).single().execute()
+    )
+    if not campanha.data:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+
+    peca = (
+        db.table("pecas").select("*").eq("campanha_id", campanha_id)
+        .eq("formato", formato).eq("is_atual", True).single().execute()
+    )
+    if not peca.data:
+        raise HTTPException(status_code=404, detail="Peça não encontrada")
+
+    return peca.data
 
 
 @router.post("/{campanha_id}/gerar")

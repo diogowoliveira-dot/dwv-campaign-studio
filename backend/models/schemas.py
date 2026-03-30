@@ -63,6 +63,14 @@ class PecaResponse(BaseModel):
     arquivo_url: str
 
 
+class PecaResumo(BaseModel):
+    id: str
+    formato: str
+    versao: int
+    arquivo_url: str
+    has_html: bool = True
+
+
 class MensagemResponse(BaseModel):
     id: str
     role: str
@@ -72,7 +80,7 @@ class MensagemResponse(BaseModel):
 
 class CampanhaCompleta(CampanhaResponse):
     briefing: dict
-    pecas: list[PecaResponse]
+    pecas: list[PecaResumo]
     mensagens: list[MensagemResponse]
     executivo: ExecutivoResponse
 

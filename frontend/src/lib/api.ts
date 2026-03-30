@@ -310,6 +310,13 @@ export const campanhas = {
     }
     return request<CampanhaCompleta>(`/campanhas/${id}/gerar`, { method: "POST" });
   },
+  obterPeca: async (id: string, formato: string): Promise<Peca> => {
+    if (DEMO_MODE) {
+      const camp = await campanhas.obter(id);
+      return camp.pecas.find((p) => p.formato === formato) || camp.pecas[0];
+    }
+    return request<Peca>(`/campanhas/${id}/peca/${formato}`);
+  },
   deletar: async (id: string): Promise<void> => {
     if (DEMO_MODE) {
       const idx = DEMO_CAMPANHAS.findIndex((c) => c.id === id);

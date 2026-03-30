@@ -135,6 +135,7 @@ export default function CampanhaPage() {
         {/* Preview */}
         <div className="flex-1 h-1/2 lg:h-full bg-card-dark/50">
           <PreviewPanel
+            campanhaId={id}
             pecas={campanha.pecas}
             onFormatoChange={setFormato}
           />
