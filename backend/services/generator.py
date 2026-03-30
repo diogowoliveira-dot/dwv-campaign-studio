@@ -42,29 +42,55 @@ def _is_valid_image_url(url: str) -> bool:
 
 
 def _try_download_image(url: str, min_bytes: int = 2000) -> str:
-    """Try to download an image, return b64 or empty string. Validates size."""
+    """Try to download an image, return b64 or empty string.
+
+    If the URL returns text/html instead of an image (anti-hotlink or wrong path),
+    tries alternative paths by stripping URL segments.
+    """
     if not url:
         return ""
-    try:
-        import urllib.request
-        req = urllib.request.Request(url, headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-        })
-        with urllib.request.urlopen(req, timeout=12) as r:
-            content_type = r.headers.get("Content-Type", "image/jpeg")
-            if "image" not in content_type and "octet" not in content_type:
-                return ""
-            data = r.read()
-            if len(data) < min_bytes:
-                return ""  # Too small — probably icon or broken
-            mime = content_type.split(";")[0].strip()
-            if "svg" in mime:
-                mime = "image/svg+xml"
-            elif "image" not in mime:
-                mime = "image/jpeg"
-            return f"data:{mime};base64," + base64.b64encode(data).decode()
-    except Exception:
-        return ""
+
+    urls_to_try = [url]
+
+    # Generate alternative paths: some sites resolve relative paths wrong
+    # e.g. /empreendimentos/img/X.jpg should be /img/X.jpg
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    path_parts = parsed.path.strip("/").split("/")
+    if len(path_parts) > 2:
+        # Try removing the first path segment
+        alt_path = "/" + "/".join(path_parts[1:])
+        alt_url = f"{parsed.scheme}://{parsed.netloc}{alt_path}"
+        urls_to_try.append(alt_url)
+        # Try removing first two segments
+        if len(path_parts) > 3:
+            alt_path2 = "/" + "/".join(path_parts[2:])
+            alt_url2 = f"{parsed.scheme}://{parsed.netloc}{alt_path2}"
+            urls_to_try.append(alt_url2)
+
+    for try_url in urls_to_try:
+        try:
+            import urllib.request
+            req = urllib.request.Request(try_url, headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+            })
+            with urllib.request.urlopen(req, timeout=12) as r:
+                content_type = r.headers.get("Content-Type", "")
+                if "image" not in content_type and "octet" not in content_type:
+                    continue  # Try next URL variant
+                data = r.read()
+                if len(data) < min_bytes:
+                    continue
+                mime = content_type.split(";")[0].strip()
+                if "svg" in mime:
+                    mime = "image/svg+xml"
+                elif "image" not in mime:
+                    mime = "image/jpeg"
+                return f"data:{mime};base64," + base64.b64encode(data).decode()
+        except Exception:
+            continue
+
+    return ""
 
 
 def _extract_colors_from_html(html: str) -> dict:
