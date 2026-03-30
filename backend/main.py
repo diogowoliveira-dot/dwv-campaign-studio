@@ -47,6 +47,13 @@ async def health():
     try:
         d = db.get_db()
         res = d.table("executivos").select("*").execute()
-        return {"db": "ok", "rows": len(res.data), "use_postgres": db.USE_POSTGRES, "has_db_url": bool(os.getenv("DATABASE_URL"))}
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        return {
+            "db": "ok", "rows": len(res.data),
+            "use_postgres": db.USE_POSTGRES,
+            "has_db_url": bool(os.getenv("DATABASE_URL")),
+            "has_anthropic_key": bool(api_key and api_key != "placeholder"),
+            "anthropic_key_prefix": api_key[:15] + "..." if api_key else "MISSING",
+        }
     except Exception as e:
         return {"db": "error", "detail": str(e), "use_postgres": db.USE_POSTGRES, "has_db_url": bool(os.getenv("DATABASE_URL"))}
