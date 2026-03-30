@@ -4,113 +4,93 @@
 <meta charset="UTF-8">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    width: 1080px;
-    height: 1080px;
+    width: 1080px; height: 1080px;
     font-family: 'Inter', sans-serif;
     background: {{ cor_fundo }};
     color: #ffffff;
-    overflow: hidden;
-    position: relative;
+    overflow: hidden; position: relative;
   }
 
+  /* Hero image covers 65% — minimizes empty dark area */
   .hero-image {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 50%;
+    position: absolute; top: 0; left: 0; right: 0; height: 65%;
     overflow: hidden;
   }
-  .hero-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .hero-image img { width: 100%; height: 100%; object-fit: cover; }
   .hero-image .gradient {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 80%;
-    background: linear-gradient(to top, {{ cor_fundo }} 20%, transparent);
+    position: absolute; bottom: 0; left: 0; right: 0; height: 80%;
+    background: linear-gradient(to top, {{ cor_fundo }} 10%, transparent);
   }
 
   .top-bar {
-    position: absolute;
-    top: 44px; left: 48px; right: 48px;
-    display: flex; justify-content: space-between; align-items: center;
-    z-index: 2;
+    position: absolute; top: 40px; left: 44px; right: 44px;
+    display: flex; justify-content: space-between; align-items: center; z-index: 2;
   }
-
-  .logo-incorporadora { height: 36px; object-fit: contain; }
+  .logo-incorporadora { height: 34px; object-fit: contain; }
   .logo-incorporadora-text {
-    font-size: 16px; font-weight: 700; color: {{ cor_primaria }};
-    text-transform: uppercase; letter-spacing: 2px; font-family: Arial, sans-serif;
+    font-size: 14px; font-weight: 600; color: #FFFFFF;
+    text-transform: uppercase; letter-spacing: 2px;
   }
-
   .badge {
-    font-size: 11px; color: {{ cor_primaria }}; border: 1px solid {{ cor_primaria }};
-    padding: 8px 16px; font-family: Arial, sans-serif; font-weight: 700;
-    letter-spacing: .12em; text-transform: uppercase;
+    font-size: 10px; color: #FFFFFF; background: rgba(255,255,255,0.15);
+    padding: 7px 14px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    backdrop-filter: blur(10px);
   }
 
   .content {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    padding: 0 48px;
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 0 44px 0;
   }
-
   .emp-name {
-    font-size: 16px; color: {{ cor_primaria }}; letter-spacing: .18em;
-    text-transform: uppercase; font-family: Arial, sans-serif; margin-bottom: 12px;
+    font-size: 13px; color: #FFFFFF; letter-spacing: .18em;
+    text-transform: uppercase; opacity: 0.6; margin-bottom: 8px;
   }
-
-  .logo-empreendimento { height: 80px; object-fit: contain; margin-bottom: 16px; }
+  .logo-empreendimento { height: 60px; object-fit: contain; margin-bottom: 12px; }
 
   .headline {
-    font-size: 38px; font-weight: 600; line-height: 1.15;
-    margin-bottom: 10px; letter-spacing: -0.3px;
+    font-size: 34px; font-weight: 600; line-height: 1.15;
+    margin-bottom: 8px; color: #FFFFFF;
   }
-
   .subtitle {
-    font-size: 18px; font-weight: 300; color: rgba(255,255,255,0.55);
-    margin-bottom: 20px; line-height: 1.4;
+    font-size: 16px; font-weight: 300; color: rgba(255,255,255,0.6);
+    margin-bottom: 16px; line-height: 1.4;
   }
 
-  .event-info {
-    margin-bottom: 16px; padding: 14px 20px;
-    background: rgba(255,255,255,0.04);
-    border-left: 3px solid {{ cor_primaria }};
+  /* Specs bar — shows key data */
+  .specs {
+    display: flex; gap: 2px; margin-bottom: 14px;
   }
-  .event-info .date { font-size: 22px; font-weight: 700; color: #fff; }
-  .event-info .location { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+  .spec {
+    flex: 1; padding: 10px 8px; background: rgba(255,255,255,0.06); text-align: center;
+  }
+  .spec-val { font-size: 22px; font-weight: 700; color: #FFFFFF; }
+  .spec-lbl { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
 
   .exec-block {
-    display: flex; align-items: center; gap: 14px;
-    padding: 18px 22px; margin-bottom: 44px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px; margin-bottom: 40px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
   }
-
   .exec-foto {
-    width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
-    border: 2px solid {{ cor_primaria }}; flex-shrink: 0;
+    width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.25); flex-shrink: 0;
   }
   .exec-avatar {
-    width: 56px; height: 56px; border-radius: 50%;
-    background: {{ cor_primaria }}; display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 700; color: #fff; flex-shrink: 0; font-family: Arial, sans-serif;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 600; color: #fff; flex-shrink: 0;
   }
-
-  .exec-divider { width: 1px; height: 44px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
-  .exec-name { font-size: 17px; font-weight: 700; margin-bottom: 1px; }
-  .exec-cargo { font-size: 12px; color: {{ cor_primaria }}; font-family: Arial, sans-serif; }
-  .exec-contato { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 3px; font-family: Arial, sans-serif; }
+  .exec-info { flex: 1; }
+  .exec-name { font-size: 15px; font-weight: 600; color: #FFFFFF; }
+  .exec-cargo { font-size: 11px; color: rgba(255,255,255,0.45); }
+  .exec-contato { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
 
   .cta-bar {
-    padding: 14px 22px; background: {{ cor_primaria }}; color: {{ cor_fundo }};
-    font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
-    font-family: Arial, sans-serif; text-align: center; flex-shrink: 0; margin-left: auto;
+    padding: 14px 20px; background: #FFFFFF; color: {{ cor_fundo }};
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+    text-align: center; flex-shrink: 0; margin-left: auto;
   }
 </style>
 </head>
@@ -128,7 +108,7 @@
     {% else %}
     <div class="logo-incorporadora-text">{{ cliente }}</div>
     {% endif %}
-    <div class="badge">{{ cliente }}</div>
+    <div class="badge">{{ tipo if tipo else cliente }}</div>
   </div>
 
   <div class="content">
@@ -142,10 +122,16 @@
     <div class="subtitle">{{ copy.subtitulo }}</div>
 
     {% if data_evento %}
-    <div class="event-info">
-      <div class="date">{{ data_evento }}</div>
+    <div class="specs">
+      <div class="spec">
+        <div class="spec-val" style="font-size:16px;">{{ data_evento }}</div>
+        <div class="spec-lbl">Evento</div>
+      </div>
       {% if local_evento %}
-      <div class="location">{{ local_evento }}</div>
+      <div class="spec">
+        <div class="spec-val" style="font-size:14px;">{{ local_evento }}</div>
+        <div class="spec-lbl">Local</div>
+      </div>
       {% endif %}
     </div>
     {% endif %}
@@ -156,11 +142,10 @@
       {% else %}
       <div class="exec-avatar">{{ executivo_nome[:2] | upper }}</div>
       {% endif %}
-      <div class="exec-divider"></div>
-      <div style="flex:1;">
+      <div class="exec-info">
         <div class="exec-name">{{ executivo_nome }}</div>
         <div class="exec-cargo">{{ executivo_cargo }}</div>
-        <div class="exec-contato">{{ executivo_whatsapp }}</div>
+        <div class="exec-contato">{{ executivo_whatsapp }}{% if executivo_whatsapp and executivo_email %} · {% endif %}{{ executivo_email }}</div>
       </div>
       <div class="cta-bar">{{ copy.cta if copy.cta else 'Saiba mais' }}</div>
     </div>

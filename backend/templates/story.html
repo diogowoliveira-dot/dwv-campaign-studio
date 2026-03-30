@@ -4,125 +4,94 @@
 <meta charset="UTF-8">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    width: 1080px;
-    height: 1920px;
+    width: 1080px; height: 1920px;
     font-family: 'Inter', sans-serif;
     background: {{ cor_fundo }};
     color: #ffffff;
-    overflow: hidden;
-    position: relative;
+    overflow: hidden; position: relative;
   }
 
-  /* Fachada hero image — top half */
   .hero-image {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 55%;
+    position: absolute; top: 0; left: 0; right: 0; height: 55%;
     overflow: hidden;
   }
-  .hero-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .hero-image img { width: 100%; height: 100%; object-fit: cover; }
   .hero-image .gradient {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 70%;
+    position: absolute; bottom: 0; left: 0; right: 0; height: 70%;
     background: linear-gradient(to top, {{ cor_fundo }} 15%, transparent);
   }
 
-  /* Content overlay */
-  .content {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    padding: 0 60px;
-  }
-
   .top-bar {
-    position: absolute;
-    top: 56px; left: 60px; right: 60px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 2;
+    position: absolute; top: 56px; left: 60px; right: 60px;
+    display: flex; justify-content: space-between; align-items: center; z-index: 2;
   }
-
   .logo-incorporadora { height: 52px; object-fit: contain; }
   .logo-incorporadora-text {
-    font-size: 20px; font-weight: 700; color: {{ cor_primaria }};
-    text-transform: uppercase; letter-spacing: 3px; font-family: Arial, sans-serif;
+    font-size: 18px; font-weight: 600; color: #FFFFFF;
+    text-transform: uppercase; letter-spacing: 3px;
   }
-
   .badge {
-    font-size: 13px; color: {{ cor_fundo }}; background: {{ cor_primaria }};
-    padding: 10px 22px; font-family: Arial, sans-serif; font-weight: 700;
-    letter-spacing: .12em; text-transform: uppercase;
+    font-size: 12px; color: #FFFFFF; background: rgba(255,255,255,0.15);
+    padding: 10px 22px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+    backdrop-filter: blur(10px);
   }
 
+  .content {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 0 60px;
+  }
   .emp-name {
-    font-size: 22px; color: {{ cor_primaria }}; letter-spacing: .2em;
-    text-transform: uppercase; font-family: Arial, sans-serif; margin-bottom: 16px;
+    font-size: 18px; color: #FFFFFF; letter-spacing: .2em;
+    text-transform: uppercase; opacity: 0.7; margin-bottom: 16px;
   }
-
-  .logo-empreendimento { height: 100px; object-fit: contain; margin-bottom: 20px; }
+  .logo-empreendimento { height: 90px; object-fit: contain; margin-bottom: 20px; }
 
   .headline {
-    font-size: 48px; font-weight: 600; line-height: 1.2;
-    margin-bottom: 16px; letter-spacing: -0.5px;
+    font-size: 46px; font-weight: 600; line-height: 1.2;
+    margin-bottom: 14px; letter-spacing: -0.5px; color: #FFFFFF;
   }
-
   .subtitle {
-    font-size: 24px; font-weight: 300; color: rgba(255,255,255,0.6);
-    margin-bottom: 32px; line-height: 1.4;
+    font-size: 22px; font-weight: 300; color: rgba(255,255,255,0.65);
+    margin-bottom: 28px; line-height: 1.45;
   }
-
   .cta {
-    display: inline-block; padding: 22px 56px;
-    background: {{ cor_primaria }}; color: {{ cor_fundo }};
-    font-size: 24px; font-weight: 700; border-radius: 4px;
-    text-transform: uppercase; letter-spacing: 2px;
-    margin-bottom: 36px;
+    display: inline-block; padding: 20px 48px;
+    background: #FFFFFF; color: {{ cor_fundo }};
+    font-size: 18px; font-weight: 700; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 32px;
   }
 
   .event-info {
-    margin-bottom: 32px; padding: 20px 28px;
-    background: rgba(255,255,255,0.04);
-    border-left: 3px solid {{ cor_primaria }};
+    margin-bottom: 28px; padding: 18px 24px;
+    background: rgba(255,255,255,0.06); border-left: 3px solid #FFFFFF;
   }
-  .event-info .label { font-size: 13px; color: {{ cor_primaria }}; letter-spacing: .15em; text-transform: uppercase; font-family: Arial, sans-serif; margin-bottom: 4px; }
-  .event-info .date { font-size: 32px; font-weight: 700; color: #ffffff; }
-  .event-info .location { font-size: 20px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+  .event-info .label { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 4px; }
+  .event-info .date { font-size: 28px; font-weight: 600; color: #FFFFFF; }
+  .event-info .location { font-size: 17px; color: rgba(255,255,255,0.5); margin-top: 4px; }
 
   .exec-block {
-    display: flex; align-items: center; gap: 20px;
-    padding: 24px 28px; margin-bottom: 56px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 18px;
+    padding: 22px 24px; margin-bottom: 50px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
   }
-
   .exec-foto {
-    width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
-    border: 2px solid {{ cor_primaria }}; flex-shrink: 0;
+    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.3); flex-shrink: 0;
   }
   .exec-avatar {
-    width: 80px; height: 80px; border-radius: 50%;
-    background: {{ cor_primaria }}; display: flex; align-items: center; justify-content: center;
-    font-size: 30px; font-weight: 700; color: #fff; flex-shrink: 0; font-family: Arial, sans-serif;
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 600; color: #fff; flex-shrink: 0;
   }
-
-  .exec-divider { width: 1px; height: 64px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
-  .exec-name { font-size: 24px; font-weight: 700; margin-bottom: 2px; }
-  .exec-cargo { font-size: 16px; color: {{ cor_primaria }}; margin-bottom: 6px; font-family: Arial, sans-serif; }
-  .exec-contato { font-size: 18px; color: rgba(255,255,255,0.5); line-height: 1.5; font-family: Arial, sans-serif; }
+  .exec-divider { width: 1px; height: 56px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+  .exec-name { font-size: 20px; font-weight: 600; color: #FFFFFF; margin-bottom: 2px; }
+  .exec-cargo { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+  .exec-contato { font-size: 15px; color: rgba(255,255,255,0.45); }
 </style>
 </head>
 <body>
-  <!-- Hero image -->
   {% if imagem_principal_b64 %}
   <div class="hero-image">
     <img src="{{ imagem_principal_b64 }}" alt="{{ empreendimento }}">
@@ -130,7 +99,6 @@
   </div>
   {% endif %}
 
-  <!-- Top bar: logo + badge -->
   <div class="top-bar">
     {% if logo_incorporadora_b64 %}
     <img src="{{ logo_incorporadora_b64 }}" class="logo-incorporadora" alt="{{ cliente }}">
@@ -140,7 +108,6 @@
     <div class="badge">{{ tipo if tipo else 'Exclusivo' }}</div>
   </div>
 
-  <!-- Content -->
   <div class="content">
     {% if logo_empreendimento_b64 %}
     <img src="{{ logo_empreendimento_b64 }}" class="logo-empreendimento" alt="{{ empreendimento }}">
@@ -153,7 +120,7 @@
 
     {% if data_evento %}
     <div class="event-info">
-      <div class="label">Evento de lançamento</div>
+      <div class="label">Evento</div>
       <div class="date">{{ data_evento }}</div>
       {% if local_evento %}
       <div class="location">{{ local_evento }}</div>
@@ -173,10 +140,7 @@
       <div>
         <div class="exec-name">{{ executivo_nome }}</div>
         <div class="exec-cargo">{{ executivo_cargo }}</div>
-        <div class="exec-contato">
-          {% if executivo_whatsapp %}{{ executivo_whatsapp }}<br>{% endif %}
-          {% if executivo_email %}{{ executivo_email }}{% endif %}
-        </div>
+        <div class="exec-contato">{{ executivo_whatsapp }}{% if executivo_whatsapp and executivo_email %} · {% endif %}{{ executivo_email }}</div>
       </div>
     </div>
   </div>
