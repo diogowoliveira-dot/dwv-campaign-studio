@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import ChatPanel from "@/components/ChatPanel";
 import PreviewPanel from "@/components/PreviewPanel";
@@ -8,7 +8,6 @@ import { campanhas, CampanhaCompleta, Mensagem } from "@/lib/api";
 
 export default function CampanhaPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
 
   const [campanha, setCampanha] = useState<CampanhaCompleta | null>(null);
