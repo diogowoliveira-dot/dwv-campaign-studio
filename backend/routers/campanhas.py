@@ -89,7 +89,11 @@ async def gerar(campanha_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Executivo não encontrado")
 
     briefing = campanha.data["briefing"]
-    resultado = await gerar_campanha_completa(briefing, executivo.data, db, campanha_id)
+
+    try:
+        resultado = await gerar_campanha_completa(briefing, executivo.data, db, campanha_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na geração: {str(e)}")
 
     db.table("campanhas").update({"status": "gerada"}).eq("id", campanha_id).execute()
 

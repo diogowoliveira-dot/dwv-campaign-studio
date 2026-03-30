@@ -160,21 +160,26 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
 
     pecas = []
 
+    # Helper: tenta gerar PNG, se falhar salva só HTML
+    async def _gerar_peca(formato, template_name, width, height, copy_key):
+        html = jinja_env.get_template(template_name).render(**dados, copy=copy.get(copy_key, {}))
+        arquivo_url = ""
+        if formato != "email":
+            try:
+                png_path = html_to_png(html, width, height)
+                arquivo_url = await _upload_png(db, campanha_id, formato, png_path)
+            except Exception:
+                pass  # PNG falhou — salva só HTML, preview via iframe
+        pecas.append(await _salvar_peca(db, campanha_id, formato, html, arquivo_url))
+
     # 4. Gerar Story (1080x1920)
-    story_html = jinja_env.get_template("story.html").render(**dados, copy=copy.get("story", {}))
-    story_png_path = html_to_png(story_html, 1080, 1920)
-    story_url = await _upload_png(db, campanha_id, "story", story_png_path)
-    pecas.append(await _salvar_peca(db, campanha_id, "story", story_html, story_url))
+    await _gerar_peca("story", "story.html", 1080, 1920, "story")
 
     # 5. Gerar Post (1080x1080)
-    post_html = jinja_env.get_template("post.html").render(**dados, copy=copy.get("post", {}))
-    post_png_path = html_to_png(post_html, 1080, 1080)
-    post_url = await _upload_png(db, campanha_id, "post", post_png_path)
-    pecas.append(await _salvar_peca(db, campanha_id, "post", post_html, post_url))
+    await _gerar_peca("post", "post.html", 1080, 1080, "post")
 
     # 6. Gerar Email
-    email_html = jinja_env.get_template("email.html").render(**dados, copy=copy.get("email", {}))
-    pecas.append(await _salvar_peca(db, campanha_id, "email", email_html, ""))
+    await _gerar_peca("email", "email.html", 600, 900, "email")
 
     # Salvar copy no banco
     db.table("campanhas").update({"copy": copy}).eq("id", campanha_id).execute()
