@@ -41,6 +41,27 @@ async def root():
     return {"status": "ok", "app": "DWV Campaign Studio API"}
 
 
+@app.get("/test-anthropic")
+async def test_anthropic():
+    """Test if we can reach Anthropic API."""
+    import httpx
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    try:
+        async with httpx.AsyncClient(timeout=30) as http:
+            r = await http.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={"model": "claude-sonnet-4-20250514", "max_tokens": 10, "messages": [{"role": "user", "content": "hi"}]},
+            )
+            return {"status": r.status_code, "body": r.json() if r.status_code == 200 else r.text[:200]}
+    except Exception as e:
+        return {"status": "error", "type": type(e).__name__, "detail": str(e)}
+
+
 @app.get("/health")
 async def health():
     """Debug endpoint to test DB connection."""
