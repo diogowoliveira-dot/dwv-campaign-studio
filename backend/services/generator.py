@@ -5,7 +5,7 @@ import base64
 from uuid import uuid4
 from jinja2 import Environment, FileSystemLoader
 from services.copy_writer import gerar_copy
-from services.image_utils import get_b64, make_white_logo, precisa_inverter_logo, encode_exec_photo
+from services.image_utils import get_b64, make_white_logo, precisa_inverter_logo, encode_exec_photo, auditar_logo
 from services.playwright_render import html_to_png
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
@@ -29,6 +29,7 @@ async def coletar_assets(url_site: str) -> dict:
         "imagem_principal_b64": "",
         "cor_primaria": "#C9A96E",
         "cor_fundo": "#0A0A0A",
+        "destaques_site": "",  # textos extraídos da página para enriquecer copy
     }
 
     if not url_site:
@@ -166,6 +167,65 @@ async def coletar_assets(url_site: str) -> dict:
                 except Exception:
                     pass
 
+            # --- AUDITORIA DE LOGOS: garantir contraste com fundo escuro ---
+            if assets["logo_incorporadora_b64"]:
+                assets["logo_incorporadora_b64"] = auditar_logo(
+                    assets["logo_incorporadora_b64"], fundo_escuro=True
+                )
+            if assets["logo_empreendimento_b64"]:
+                assets["logo_empreendimento_b64"] = auditar_logo(
+                    assets["logo_empreendimento_b64"], fundo_escuro=True
+                )
+
+            # --- EXTRAÇÃO DE CONTEÚDO TEXTUAL DA PÁGINA ---
+            import re as _re
+
+            # Extract headings (h1, h2, h3) and highlight text
+            headings = []
+            heading_re = _re.compile(r'<h[1-3][^>]*>(.*?)</h[1-3]>', _re.IGNORECASE | _re.DOTALL)
+            for m in heading_re.finditer(html):
+                text = _re.sub(r'<[^>]+>', '', m.group(1)).strip()
+                if text and len(text) > 3 and len(text) < 200:
+                    headings.append(text)
+
+            # Extract property specs (dormitórios, suítes, m², vagas, etc.)
+            specs = []
+            spec_patterns = [
+                r'(\d+)\s*(?:dormit[óo]rios?|dorms?)',
+                r'(\d+)\s*(?:su[íi]tes?)',
+                r'(\d+[\.,]?\d*)\s*m[²2]',
+                r'(\d+)\s*(?:vagas?|garagens?)',
+                r'(\d+)\s*(?:torres?)',
+                r'(\d+)\s*(?:andares?|pavimentos?)',
+            ]
+            text_content = _re.sub(r'<[^>]+>', ' ', html)
+            for pattern in spec_patterns:
+                m = _re.search(pattern, text_content, _re.IGNORECASE)
+                if m:
+                    specs.append(m.group(0).strip())
+
+            # Extract meta description
+            meta_desc = ""
+            meta_match = _re.search(
+                r'<meta\s+[^>]*name\s*=\s*["\']description["\'][^>]*content\s*=\s*["\']([^"\']+)["\']',
+                html, _re.IGNORECASE
+            ) or _re.search(
+                r'<meta\s+[^>]*content\s*=\s*["\']([^"\']+)["\'][^>]*name\s*=\s*["\']description["\']',
+                html, _re.IGNORECASE
+            )
+            if meta_match:
+                meta_desc = meta_match.group(1).strip()
+
+            destaques = []
+            if headings:
+                destaques.append("Headlines do site: " + " | ".join(headings[:5]))
+            if specs:
+                destaques.append("Configurações: " + ", ".join(specs))
+            if meta_desc:
+                destaques.append("Descrição: " + meta_desc)
+
+            assets["destaques_site"] = "\n".join(destaques)
+
     except Exception:
         pass
 
@@ -175,11 +235,11 @@ async def coletar_assets(url_site: str) -> dict:
 async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_id: str) -> dict:
     """Gera todas as peças de uma campanha."""
 
-    # 1. Gerar copy com Claude
-    copy = await gerar_copy(briefing, executivo)
-
-    # 2. Coletar assets do site do cliente
+    # 1. Coletar assets do site do cliente (antes da copy para usar destaques)
     assets = await coletar_assets(briefing.get("url_site", ""))
+
+    # 2. Gerar copy com Claude (enriquecida com dados do site)
+    copy = await gerar_copy(briefing, executivo, destaques_site=assets.get("destaques_site", ""))
 
     # 3. Preparar foto do executivo
     foto_exec_b64 = ""

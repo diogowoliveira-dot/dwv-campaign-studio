@@ -9,8 +9,17 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 PALAVRAS_PROIBIDAS = ["incrível", "imperdível", "oportunidade única", "sonho realizado"]
 
 
-async def gerar_copy(briefing: dict, executivo: dict) -> dict:
+async def gerar_copy(briefing: dict, executivo: dict, destaques_site: str = "") -> dict:
     """Gera copy para story, post e email com base no briefing."""
+
+    destaques_block = ""
+    if destaques_site:
+        destaques_block = f"""
+DADOS EXTRAÍDOS DO SITE DO EMPREENDIMENTO (use para enriquecer a copy):
+{destaques_site}
+Use essas informações para criar uma copy mais rica e específica. Inclua dados reais como
+metragem, número de suítes, diferenciais mencionados no site. Não invente dados.
+"""
 
     prompt = f"""Você é um copywriter profissional de campanhas imobiliárias.
 
@@ -23,7 +32,7 @@ Mensagem base: {briefing.get('copy_base', '')}
 Executivo: {executivo.get('nome', '')} — {executivo.get('cargo', '')}
 {"Data do evento: " + briefing.get('data_evento', '') if briefing.get('data_evento') else ''}
 {"Local: " + briefing.get('local_evento', '') if briefing.get('local_evento') else ''}
-
+{destaques_block}
 REGRAS:
 - Cargo do executivo nas peças: "{executivo.get('cargo', 'Executivo de Parcerias')} · {briefing.get('cliente', '')}"
 - NUNCA referenciar DWV nas peças
