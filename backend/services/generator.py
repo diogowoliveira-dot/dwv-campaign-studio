@@ -79,10 +79,25 @@ async def coletar_assets(url_site: str) -> dict:
                         if prop == "og:image" and d.get("content"):
                             og_image = urljoin(base_url, d["content"])
 
+            # Also collect ALL images for hero/fachada fallback
+            all_images = []
+
+            class FullImageParser(HTMLParser):
+                def handle_starttag(self, tag, attrs):
+                    if tag == "img":
+                        d = dict(attrs)
+                        src = d.get("src", "") or d.get("data-src", "") or d.get("data-lazy-src", "")
+                        if src and not src.startswith("data:"):
+                            resolved = urljoin(base_url, src)
+                            all_images.append(resolved)
+
+            img_parser = FullImageParser()
+            img_parser.feed(html)
+
             parser = AssetParser()
             parser.feed(html)
 
-            # Try logos in order
+            # --- LOGO INCORPORADORA ---
             logo_url = ""
             for candidate in logos:
                 try:
@@ -104,15 +119,50 @@ async def coletar_assets(url_site: str) -> dict:
                     pass
 
             if logo_url:
-                mime = "image/png" if logo_url.endswith(".svg") or logo_url.endswith(".png") else "image/jpeg"
-                assets["logo_incorporadora_b64"] = get_b64(logo_url, mime)
-                if precisa_inverter_logo(logo_url, fundo_escuro=True):
-                    assets["logo_incorporadora_b64"] = make_white_logo(logo_url)
-
-            # OG image as main image
-            if og_image:
+                mime = "image/png" if ".svg" in logo_url or ".png" in logo_url else "image/jpeg"
                 try:
-                    assets["imagem_principal_b64"] = get_b64(og_image, "image/jpeg")
+                    assets["logo_incorporadora_b64"] = get_b64(logo_url, mime)
+                    if precisa_inverter_logo(logo_url, fundo_escuro=True):
+                        assets["logo_incorporadora_b64"] = make_white_logo(logo_url)
+                except Exception:
+                    pass
+
+            # --- LOGO EMPREENDIMENTO (second logo found, or another img with project name) ---
+            if len(logos) > 1:
+                try:
+                    assets["logo_empreendimento_b64"] = get_b64(logos[1], "image/png")
+                except Exception:
+                    pass
+
+            # --- IMAGEM PRINCIPAL (fachada/hero) — ALWAYS try to get one ---
+            hero_url = ""
+
+            # Priority 1: og:image
+            if og_image:
+                hero_url = og_image
+
+            # Priority 2: look for fachada/building keywords in image URLs
+            if not hero_url:
+                fachada_keywords = ["fachada", "hero", "banner", "building", "render", "perspectiva", "empreendimento"]
+                for img_url in all_images:
+                    if any(kw in img_url.lower() for kw in fachada_keywords):
+                        hero_url = img_url
+                        break
+
+            # Priority 3: first large image (skip tiny icons/logos)
+            if not hero_url:
+                for img_url in all_images:
+                    if img_url in logos or "icon" in img_url.lower() or "logo" in img_url.lower():
+                        continue
+                    # Skip SVGs (usually decorative)
+                    if img_url.endswith(".svg"):
+                        continue
+                    hero_url = img_url
+                    break
+
+            if hero_url:
+                try:
+                    assets["imagem_principal_b64"] = get_b64(hero_url, "image/jpeg")
                 except Exception:
                     pass
 
@@ -134,9 +184,14 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
     # 3. Preparar foto do executivo
     foto_exec_b64 = ""
     if executivo.get("foto_url"):
+        foto_url = executivo["foto_url"]
         try:
-            foto_exec_b64 = get_b64(executivo["foto_url"], "image/jpeg")
-            foto_exec_b64 = encode_exec_photo(foto_exec_b64)
+            if foto_url.startswith("data:"):
+                # Already base64 (uploaded directly)
+                foto_exec_b64 = encode_exec_photo(foto_url)
+            else:
+                foto_exec_b64 = get_b64(foto_url, "image/jpeg")
+                foto_exec_b64 = encode_exec_photo(foto_exec_b64)
         except Exception:
             pass
 
@@ -156,6 +211,7 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
         "data_evento": briefing.get("data_evento", ""),
         "local_evento": briefing.get("local_evento", ""),
         "url_site": briefing.get("url_site", ""),
+        "imagem_principal_b64": assets["imagem_principal_b64"],
     }
 
     pecas = []

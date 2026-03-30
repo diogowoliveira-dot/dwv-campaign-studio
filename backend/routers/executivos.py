@@ -52,13 +52,15 @@ async def toggle(exec_id: str, user: dict = Depends(get_current_user)):
 
 @router.post("/{exec_id}/foto")
 async def upload_foto(exec_id: str, foto: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    import base64
     db = get_db()
     conteudo = await foto.read()
-    path = f"executivos/{exec_id}/{foto.filename}"
+    content_type = foto.content_type or "image/jpeg"
 
-    db.storage.from_("fotos").upload(path, conteudo, {"content-type": foto.content_type or "image/jpeg"})
-    url = db.storage.from_("fotos").get_public_url(path)
+    # Save as base64 data URI in the database (works everywhere, no storage needed)
+    b64 = base64.b64encode(conteudo).decode()
+    data_uri = f"data:{content_type};base64,{b64}"
 
-    db.table("executivos").update({"foto_url": url}).eq("id", exec_id).execute()
+    db.table("executivos").update({"foto_url": data_uri}).eq("id", exec_id).execute()
 
-    return {"foto_url": url}
+    return {"foto_url": data_uri}
