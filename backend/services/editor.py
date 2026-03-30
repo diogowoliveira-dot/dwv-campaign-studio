@@ -1,14 +1,11 @@
 """Edição conversacional de peças via Anthropic API."""
 
 import os
-import json
-import base64
 from uuid import uuid4
-from anthropic import Anthropic
+import httpx
 from services.playwright_render import html_to_png
 
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
-
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 EXEMPLOS_EDICAO = """
 Exemplos de interpretação:
@@ -43,13 +40,24 @@ Regras:
 HTML atual:
 {html_atual}"""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=8000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    async with httpx.AsyncClient(timeout=60) as http:
+        response = await http.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 8000,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
 
-    html_editado = response.content[0].text.strip()
+    html_editado = data["content"][0]["text"].strip()
 
     # Limpar possíveis code blocks
     if html_editado.startswith("```"):
@@ -60,20 +68,21 @@ HTML atual:
     # Regenerar PNG (exceto email)
     arquivo_url = peca.get("arquivo_url", "")
     if formato != "email":
-        largura = 1080
-        altura = 1920 if formato == "story" else 1080
-        png_path = html_to_png(html_editado, largura, altura)
+        try:
+            largura = 1080
+            altura = 1920 if formato == "story" else 1080
+            png_path = html_to_png(html_editado, largura, altura)
 
-        # Upload para Supabase Storage
-        with open(png_path, "rb") as f:
-            png_data = f.read()
-        storage_path = f"campanhas/{campanha_id}/{formato}_v{peca['versao'] + 1}.png"
-        db.storage.from_("campanhas").upload(
-            storage_path, png_data, {"content-type": "image/png"}
-        )
-        arquivo_url = db.storage.from_("campanhas").get_public_url(storage_path)
-
-        os.remove(png_path)
+            with open(png_path, "rb") as f:
+                png_data = f.read()
+            storage_path = f"campanhas/{campanha_id}/{formato}_v{peca['versao'] + 1}.png"
+            db.storage.from_("campanhas").upload(
+                storage_path, png_data, {"content-type": "image/png"}
+            )
+            arquivo_url = db.storage.from_("campanhas").get_public_url(storage_path)
+            os.remove(png_path)
+        except Exception:
+            pass  # PNG failed — keep HTML only
 
     # Marcar peça antiga como não-atual
     db.table("pecas").update({"is_atual": False}).eq("id", peca["id"]).execute()

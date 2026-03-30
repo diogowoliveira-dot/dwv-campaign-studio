@@ -2,9 +2,9 @@
 
 import os
 import json
-from anthropic import Anthropic
+import httpx
 
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 PALAVRAS_PROIBIDAS = ["incrível", "imperdível", "oportunidade única", "sonho realizado"]
 
@@ -54,13 +54,24 @@ Retorne um JSON com esta estrutura exata:
 
 Retorne APENAS o JSON, sem explicações."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1500,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    async with httpx.AsyncClient(timeout=60) as http:
+        response = await http.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1500,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
 
-    text = response.content[0].text.strip()
+    text = data["content"][0]["text"].strip()
     # Limpar possíveis markdown code blocks
     if text.startswith("```"):
         text = text.split("\n", 1)[1]
