@@ -13,159 +13,139 @@
     font-family: 'Space Grotesk', sans-serif;
     background: {{ cor_fundo }};
     color: #ffffff;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
     position: relative;
   }
 
+  /* Fachada hero image — top half */
+  .hero-image {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 55%;
+    overflow: hidden;
+  }
+  .hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero-image .gradient {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 70%;
+    background: linear-gradient(to top, {{ cor_fundo }} 15%, transparent);
+  }
+
+  /* Content overlay */
+  .content {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 0 60px;
+  }
+
   .top-bar {
-    padding: 60px 60px 0;
+    position: absolute;
+    top: 56px; left: 60px; right: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    z-index: 2;
   }
 
-  .logo-incorporadora {
-    height: 52px;
-    object-fit: contain;
+  .logo-incorporadora { height: 52px; object-fit: contain; }
+  .logo-incorporadora-text {
+    font-size: 20px; font-weight: 700; color: {{ cor_primaria }};
+    text-transform: uppercase; letter-spacing: 3px; font-family: Arial, sans-serif;
   }
 
-  .logo-empreendimento {
-    height: 140px;
-    object-fit: contain;
+  .badge {
+    font-size: 13px; color: {{ cor_fundo }}; background: {{ cor_primaria }};
+    padding: 10px 22px; font-family: Arial, sans-serif; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
   }
 
-  .hero {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 40px 60px;
+  .emp-name {
+    font-size: 22px; color: {{ cor_primaria }}; letter-spacing: .2em;
+    text-transform: uppercase; font-family: Arial, sans-serif; margin-bottom: 16px;
   }
+
+  .logo-empreendimento { height: 100px; object-fit: contain; margin-bottom: 20px; }
 
   .headline {
-    font-size: 64px;
-    font-weight: 700;
-    line-height: 1.1;
-    margin-bottom: 24px;
-    letter-spacing: -1px;
+    font-size: 60px; font-weight: 700; line-height: 1.1;
+    margin-bottom: 16px; letter-spacing: -1px;
   }
 
   .subtitle {
-    font-size: 32px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.7);
-    margin-bottom: 48px;
-    line-height: 1.3;
+    font-size: 28px; font-weight: 400; color: rgba(255,255,255,0.65);
+    margin-bottom: 32px; line-height: 1.35;
   }
 
   .cta {
-    display: inline-block;
-    padding: 24px 64px;
-    background: {{ cor_primaria }};
-    color: #ffffff;
-    font-size: 28px;
-    font-weight: 700;
-    border-radius: 16px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    display: inline-block; padding: 22px 56px;
+    background: {{ cor_primaria }}; color: {{ cor_fundo }};
+    font-size: 24px; font-weight: 700; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 36px;
   }
 
   .event-info {
-    margin-bottom: 40px;
-    padding: 24px 40px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    text-align: center;
+    margin-bottom: 32px; padding: 20px 28px;
+    background: rgba(255,255,255,0.04);
+    border-left: 3px solid {{ cor_primaria }};
   }
-
-  .event-info .date {
-    font-size: 36px;
-    font-weight: 700;
-    color: {{ cor_primaria }};
-  }
-
-  .event-info .location {
-    font-size: 24px;
-    color: rgba(255,255,255,0.6);
-    margin-top: 8px;
-  }
+  .event-info .label { font-size: 13px; color: {{ cor_primaria }}; letter-spacing: .15em; text-transform: uppercase; font-family: Arial, sans-serif; margin-bottom: 4px; }
+  .event-info .date { font-size: 32px; font-weight: 700; color: #ffffff; }
+  .event-info .location { font-size: 20px; color: rgba(255,255,255,0.5); margin-top: 4px; }
 
   .exec-block {
-    margin: 0 60px 60px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    padding: 28px 36px;
+    display: flex; align-items: center; gap: 20px;
+    padding: 24px 28px; margin-bottom: 56px;
     background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(201,169,110,0.2);
-    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.08);
   }
 
   .exec-foto {
-    width: 96px;
-    height: 96px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid {{ cor_primaria }};
-    flex-shrink: 0;
+    width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+    border: 2px solid {{ cor_primaria }}; flex-shrink: 0;
+  }
+  .exec-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: {{ cor_primaria }}; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; font-weight: 700; color: #fff; flex-shrink: 0; font-family: Arial, sans-serif;
   }
 
-  .exec-divider {
-    width: 1px;
-    height: 80px;
-    background: rgba(201,169,110,0.25);
-    flex-shrink: 0;
-  }
-
-  .exec-info {
-    flex: 1;
-  }
-
-  .exec-name {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-
-  .exec-cargo {
-    font-size: 20px;
-    color: {{ cor_primaria }};
-    margin-bottom: 8px;
-  }
-
-  .exec-contato {
-    font-size: 22px;
-    color: rgba(255,255,255,0.6);
-    line-height: 1.5;
-  }
+  .exec-divider { width: 1px; height: 64px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+  .exec-name { font-size: 24px; font-weight: 700; margin-bottom: 2px; }
+  .exec-cargo { font-size: 16px; color: {{ cor_primaria }}; margin-bottom: 6px; font-family: Arial, sans-serif; }
+  .exec-contato { font-size: 18px; color: rgba(255,255,255,0.5); line-height: 1.5; font-family: Arial, sans-serif; }
 </style>
 </head>
 <body>
+  <!-- Hero image -->
   {% if imagem_principal_b64 %}
-  <div style="position:absolute;top:0;left:0;right:0;height:55%;overflow:hidden;">
-    <img src="{{ imagem_principal_b64 }}" style="width:100%;height:100%;object-fit:cover;opacity:0.4;">
-    <div style="position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(to top,{{ cor_fundo }},transparent);"></div>
+  <div class="hero-image">
+    <img src="{{ imagem_principal_b64 }}" alt="{{ empreendimento }}">
+    <div class="gradient"></div>
   </div>
   {% endif %}
 
-  <div class="top-bar" style="position:relative;z-index:1;">
+  <!-- Top bar: logo + badge -->
+  <div class="top-bar">
     {% if logo_incorporadora_b64 %}
     <img src="{{ logo_incorporadora_b64 }}" class="logo-incorporadora" alt="{{ cliente }}">
     {% else %}
-    <div style="font-size:24px;font-weight:700;color:{{ cor_primaria }};text-transform:uppercase;letter-spacing:2px;">{{ cliente }}</div>
+    <div class="logo-incorporadora-text">{{ cliente }}</div>
     {% endif %}
+    <div class="badge">{{ tipo if tipo else 'Exclusivo' }}</div>
   </div>
 
-  <div class="hero" style="position:relative;z-index:1;">
+  <!-- Content -->
+  <div class="content">
     {% if logo_empreendimento_b64 %}
-    <img src="{{ logo_empreendimento_b64 }}" class="logo-empreendimento" alt="{{ empreendimento }}" style="margin-bottom: 40px;">
+    <img src="{{ logo_empreendimento_b64 }}" class="logo-empreendimento" alt="{{ empreendimento }}">
     {% else %}
-    <div style="font-size:36px;font-weight:700;color:{{ cor_primaria }};letter-spacing:3px;text-transform:uppercase;margin-bottom:40px;">{{ empreendimento }}</div>
+    <div class="emp-name">{{ empreendimento }}</div>
     {% endif %}
 
     <div class="headline">{{ copy.headline }}</div>
@@ -173,6 +153,7 @@
 
     {% if data_evento %}
     <div class="event-info">
+      <div class="label">Evento de lançamento</div>
       <div class="date">{{ data_evento }}</div>
       {% if local_evento %}
       <div class="location">{{ local_evento }}</div>
@@ -181,21 +162,21 @@
     {% endif %}
 
     <div class="cta">{{ copy.cta }}</div>
-  </div>
 
-  <div class="exec-block" style="position:relative;z-index:1;">
-    {% if executivo_foto_b64 %}
-    <img src="{{ executivo_foto_b64 }}" class="exec-foto" alt="{{ executivo_nome }}">
-    {% else %}
-    <div style="width:96px;height:96px;border-radius:50%;background:{{ cor_primaria }};display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#fff;flex-shrink:0;">{{ executivo_nome[:2] | upper }}</div>
-    {% endif %}
-    <div class="exec-divider"></div>
-    <div class="exec-info">
-      <div class="exec-name">{{ executivo_nome }}</div>
-      <div class="exec-cargo">{{ executivo_cargo }}</div>
-      <div class="exec-contato">
-        {% if executivo_whatsapp %}{{ executivo_whatsapp }}<br>{% endif %}
-        {% if executivo_email %}{{ executivo_email }}{% endif %}
+    <div class="exec-block">
+      {% if executivo_foto_b64 %}
+      <img src="{{ executivo_foto_b64 }}" class="exec-foto" alt="{{ executivo_nome }}">
+      {% else %}
+      <div class="exec-avatar">{{ executivo_nome[:2] | upper }}</div>
+      {% endif %}
+      <div class="exec-divider"></div>
+      <div>
+        <div class="exec-name">{{ executivo_nome }}</div>
+        <div class="exec-cargo">{{ executivo_cargo }}</div>
+        <div class="exec-contato">
+          {% if executivo_whatsapp %}{{ executivo_whatsapp }}<br>{% endif %}
+          {% if executivo_email %}{{ executivo_email }}{% endif %}
+        </div>
       </div>
     </div>
   </div>

@@ -1,220 +1,121 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{ empreendimento }} | {{ cliente }}</title></head>
+<body style="margin:0;padding:0;background:#f0ede8;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0ede8;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:{{ cor_fundo }};max-width:600px;width:100%;">
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  <!-- HEADER: logo incorporadora -->
+  <tr><td align="center" style="padding:36px 40px 28px;">
+    {% if logo_incorporadora_b64 %}
+    <img src="{{ logo_incorporadora_b64 }}" style="height:44px;object-fit:contain;" alt="{{ cliente }}">
+    {% else %}
+    <p style="margin:0;font-size:14px;color:{{ cor_primaria }};letter-spacing:.15em;text-transform:uppercase;font-family:Arial,sans-serif;font-weight:700;">{{ cliente }}</p>
+    {% endif %}
+  </td></tr>
 
-  body {
-    font-family: 'Space Grotesk', -apple-system, sans-serif;
-    background: #f5f5f5;
-    color: #1a1a1a;
-    line-height: 1.6;
-  }
+  <!-- BANNER: imagem fachada -->
+  {% if imagem_principal_b64 %}
+  <tr><td style="padding:0;">
+    <img src="{{ imagem_principal_b64 }}" style="width:100%;height:220px;object-fit:cover;display:block;" alt="{{ empreendimento }}">
+  </td></tr>
+  {% endif %}
 
-  .container {
-    max-width: 600px;
-    margin: 0 auto;
-    background: #ffffff;
-  }
+  <!-- LOGO EMPREENDIMENTO -->
+  <tr><td align="left" style="padding:36px 48px 0;">
+    {% if logo_empreendimento_b64 %}
+    <img src="{{ logo_empreendimento_b64 }}" style="height:64px;object-fit:contain;" alt="{{ empreendimento }}">
+    {% else %}
+    <p style="margin:0;font-size:28px;color:{{ cor_primaria }};letter-spacing:.2em;text-transform:uppercase;font-family:Arial,sans-serif;font-weight:700;">{{ empreendimento }}</p>
+    {% endif %}
+  </td></tr>
 
-  .header {
-    background: {{ cor_fundo }};
-    padding: 40px;
-    text-align: center;
-  }
+  <!-- CORPO -->
+  <tr><td style="padding:24px 48px 36px;">
+    <h1 style="margin:0 0 20px;font-size:30px;line-height:1.2;color:#FFFFFF;font-weight:700;font-family:Georgia,serif;">
+      {{ copy.titulo }}
+    </h1>
 
-  .header .logo {
-    height: 44px;
-    object-fit: contain;
-    margin-bottom: 24px;
-  }
+    {{ copy.corpo }}
 
-  .header .logo-emp {
-    height: 64px;
-    object-fit: contain;
-    margin-bottom: 16px;
-  }
-
-  .header .titulo {
-    font-size: 28px;
-    font-weight: 700;
-    color: #ffffff;
-    line-height: 1.2;
-  }
-
-  .body-content {
-    padding: 40px;
-  }
-
-  .body-content p {
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 16px;
-    line-height: 1.7;
-  }
-
-  .cta-button {
-    display: inline-block;
-    padding: 16px 40px;
-    background: {{ cor_primaria }};
-    color: #ffffff !important;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 16px;
-    border-radius: 8px;
-    margin: 16px 0;
-  }
-
-  .event-box {
-    background: {{ cor_fundo }};
-    color: #ffffff;
-    padding: 24px;
-    border-radius: 8px;
-    margin: 24px 0;
-    text-align: center;
-  }
-
-  .event-box .date {
-    font-size: 24px;
-    font-weight: 700;
-    color: {{ cor_primaria }};
-  }
-
-  .event-box .location {
-    font-size: 14px;
-    color: rgba(255,255,255,0.7);
-    margin-top: 4px;
-  }
-
-  .exec-section {
-    padding: 24px 40px;
-    background: #fafafa;
-    border-top: 1px solid #eee;
-  }
-
-  .exec-block {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .exec-foto {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid {{ cor_primaria }};
-    flex-shrink: 0;
-  }
-
-  .exec-name {
-    font-size: 17px;
-    font-weight: 700;
-    color: #1a1a1a;
-  }
-
-  .exec-cargo {
-    font-size: 13px;
-    color: {{ cor_primaria }};
-    margin-bottom: 4px;
-  }
-
-  .exec-contato {
-    font-size: 14px;
-    color: #666;
-  }
-
-  .footer {
-    padding: 24px 40px;
-    background: {{ cor_fundo }};
-    text-align: center;
-  }
-
-  .footer .logo-footer {
-    height: 32px;
-    object-fit: contain;
-    margin-bottom: 8px;
-  }
-
-  .footer p {
-    font-size: 12px;
-    color: rgba(255,255,255,0.5);
-  }
-</style>
-</head>
-<body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      {% if imagem_principal_b64 %}
-      <img src="{{ imagem_principal_b64 }}" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:20px;opacity:0.6;" alt="Imagem">
-      {% endif %}
-      {% if logo_incorporadora_b64 %}
-      <img src="{{ logo_incorporadora_b64 }}" class="logo" alt="{{ cliente }}">
-      {% else %}
-      <div style="font-size:18px;font-weight:700;color:{{ cor_primaria }};letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">{{ cliente }}</div>
-      {% endif %}
-      {% if logo_empreendimento_b64 %}
-      <img src="{{ logo_empreendimento_b64 }}" class="logo-emp" alt="{{ empreendimento }}">
-      {% else %}
-      <div style="font-size:24px;font-weight:700;color:#ffffff;margin-bottom:12px;">{{ empreendimento }}</div>
-      {% endif %}
-      <div class="titulo">{{ copy.titulo }}</div>
-    </div>
-
-    <!-- Body -->
-    <div class="body-content">
-      {{ copy.corpo }}
-
-      {% if copy.cta %}
-      <div style="text-align: center; margin: 24px 0;">
-        <a href="{{ url_site or '#' }}" class="cta-button">{{ copy.cta }}</a>
-      </div>
-      {% endif %}
-
-      {% if data_evento %}
-      <div class="event-box">
-        <div class="date">{{ data_evento }}</div>
+    {% if data_evento %}
+    <!-- Destaque evento -->
+    <table cellpadding="0" cellspacing="0" style="margin:28px 0;width:100%;">
+      <tr><td style="padding:24px 28px;background:rgba(255,255,255,0.04);border-left:3px solid {{ cor_primaria }};">
+        <p style="margin:0 0 4px;font-size:12px;color:{{ cor_primaria }};letter-spacing:.15em;text-transform:uppercase;font-family:Arial,sans-serif;">Evento de lançamento</p>
+        <p style="margin:0;font-size:24px;font-weight:700;color:#FFFFFF;font-family:Georgia,serif;">{{ data_evento }}</p>
         {% if local_evento %}
-        <div class="location">{{ local_evento }}</div>
+        <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">{{ local_evento }}</p>
         {% endif %}
-      </div>
-      {% endif %}
-    </div>
+      </td></tr>
+    </table>
+    {% endif %}
 
-    <!-- Executivo -->
-    <div class="exec-section">
-      <div class="exec-block">
-        {% if executivo_foto_b64 %}
-        <img src="{{ executivo_foto_b64 }}" class="exec-foto" alt="{{ executivo_nome }}">
-        {% else %}
-        <div style="width:60px;height:60px;border-radius:50%;background:{{ cor_primaria }};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;">{{ executivo_nome[:2] | upper }}</div>
+    {% if copy.cta %}
+    <!-- CTA -->
+    <table cellpadding="0" cellspacing="0" style="margin:28px 0;">
+      <tr><td style="background:{{ cor_primaria }};border-radius:4px;">
+        <a href="{{ url_site or '#' }}"
+           style="display:block;padding:16px 40px;font-size:16px;font-weight:700;color:{{ cor_fundo }};text-decoration:none;letter-spacing:.04em;font-family:Arial,sans-serif;">
+          {{ copy.cta }}
+        </a>
+      </td></tr>
+    </table>
+    {% endif %}
+  </td></tr>
+
+  <!-- DIVISOR -->
+  <tr><td style="padding:0 48px;"><hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:0;"></td></tr>
+
+  <!-- ASSINATURA EXECUTIVO -->
+  <tr><td style="padding:28px 48px;">
+    <p style="margin:0 0 16px;font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:.1em;text-transform:uppercase;font-family:Arial,sans-serif;">Fale diretamente com o responsável</p>
+    <table cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding-right:18px;vertical-align:middle;">
+          {% if executivo_foto_b64 %}
+          <img src="{{ executivo_foto_b64 }}" width="64" height="64"
+            style="display:block;border-radius:50%;border:2px solid {{ cor_primaria }};object-fit:cover;"
+            alt="{{ executivo_nome }}">
+          {% else %}
+          <table cellpadding="0" cellspacing="0"><tr><td style="width:64px;height:64px;border-radius:50%;background:{{ cor_primaria }};text-align:center;vertical-align:middle;font-size:22px;font-weight:700;color:#fff;font-family:Arial,sans-serif;">{{ executivo_nome[:2] | upper }}</td></tr></table>
+          {% endif %}
+        </td>
+        <td style="vertical-align:middle;">
+          <p style="margin:0;font-size:17px;font-weight:700;color:#FFFFFF;font-family:Georgia,serif;">{{ executivo_nome }}</p>
+          <p style="margin:3px 0 0;font-size:13px;color:rgba(255,255,255,0.45);font-family:Arial,sans-serif;">{{ executivo_cargo }}</p>
+          {% if executivo_whatsapp %}
+          <p style="margin:8px 0 2px;font-size:14px;color:{{ cor_primaria }};font-family:Arial,sans-serif;">{{ executivo_whatsapp }}</p>
+          {% endif %}
+          {% if executivo_email %}
+          <p style="margin:0;font-size:14px;color:{{ cor_primaria }};font-family:Arial,sans-serif;">{{ executivo_email }}</p>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- FOOTER: logo + site da incorporadora -->
+  <tr><td style="padding:20px 48px 28px;background:rgba(0,0,0,0.3);">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="vertical-align:middle;">
+          {% if logo_incorporadora_b64 %}
+          <img src="{{ logo_incorporadora_b64 }}" style="height:28px;object-fit:contain;" alt="{{ cliente }}">
+          {% else %}
+          <span style="font-size:13px;color:rgba(255,255,255,.35);font-family:Arial,sans-serif;">{{ cliente }}</span>
+          {% endif %}
+        </td>
+        {% if url_site %}
+        <td align="right" style="font-size:11px;color:rgba(255,255,255,0.25);font-family:Arial,sans-serif;vertical-align:middle;">
+          <a href="{{ url_site }}" style="color:rgba(255,255,255,0.25);text-decoration:none;">{{ url_site | replace('https://', '') | replace('http://', '') | replace('www.', '') }}</a>
+        </td>
         {% endif %}
-        <div>
-          <div class="exec-name">{{ executivo_nome }}</div>
-          <div class="exec-cargo">{{ executivo_cargo }}</div>
-          <div class="exec-contato">
-            {% if executivo_whatsapp %}{{ executivo_whatsapp }}<br>{% endif %}
-            {% if executivo_email %}{{ executivo_email }}{% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
+      </tr>
+    </table>
+  </td></tr>
 
-    <!-- Footer — sempre logo + site da incorporadora, NUNCA DWV -->
-    <div class="footer">
-      {% if logo_incorporadora_b64 %}
-      <img src="{{ logo_incorporadora_b64 }}" class="logo-footer" alt="{{ cliente }}">
-      {% endif %}
-      <p>{{ cliente }}</p>
-      {% if url_site %}
-      <p><a href="{{ url_site }}" style="color: {{ cor_primaria }}; text-decoration: none;">{{ url_site | replace('https://', '') | replace('http://', '') }}</a></p>
-      {% endif %}
-    </div>
-  </div>
-</body>
-</html>
+</table>
+</td></tr></table>
+</body></html>
