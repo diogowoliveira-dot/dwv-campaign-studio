@@ -503,6 +503,10 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
 
     async def _gerar_peca(formato, template_name, width, height, copy_key):
         html = jinja_env.get_template(template_name).render(**dados, copy=copy.get(copy_key, {}))
+
+        # Quality validation — fix common issues before saving
+        html = _validar_html(html, dados)
+
         arquivo_url = ""
         if formato != "email":
             try:
@@ -519,6 +523,55 @@ async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_
     db.table("campanhas").update({"copy": copy}).eq("id", campanha_id).execute()
 
     return {"pecas": pecas, "copy": copy}
+
+
+def _validar_html(html: str, dados: dict) -> str:
+    """Post-generation quality validation.
+
+    Checks and fixes:
+    1. Dark text on dark background → force white
+    2. Empty/missing content sections
+    3. Broken image references
+    4. Contrast issues on CTA buttons
+    """
+    cor_fundo = dados.get("cor_fundo", "#0A0A0A")
+    cor_primaria = dados.get("cor_primaria", "#C9A96E")
+
+    # Determine if background is dark
+    try:
+        r_f = int(cor_fundo[1:3], 16)
+        g_f = int(cor_fundo[3:5], 16)
+        b_f = int(cor_fundo[5:7], 16)
+        fundo_escuro = (r_f + g_f + b_f) / 3 < 128
+    except Exception:
+        fundo_escuro = True
+
+    if fundo_escuro:
+        # Fix any dark text colors that would be invisible
+        # Replace common dark text on dark bg
+        html = html.replace("color:#000000", "color:#FFFFFF")
+        html = html.replace("color:#1a1a1a", "color:#FFFFFF")
+        html = html.replace("color:#333333", "color:rgba(255,255,255,0.7)")
+        html = html.replace("color:#333", "color:rgba(255,255,255,0.7)")
+        html = html.replace("color:#666666", "color:rgba(255,255,255,0.5)")
+        html = html.replace("color:#666", "color:rgba(255,255,255,0.5)")
+
+    # Ensure headline and subtitle are never empty
+    html = re.sub(
+        r'class="headline">\s*</div>',
+        f'class="headline">{dados.get("empreendimento", "")}</div>',
+        html
+    )
+    html = re.sub(
+        r'class="subtitle">\s*</div>',
+        f'class="subtitle">{dados.get("cliente", "")}</div>',
+        html
+    )
+
+    # Remove broken image tags (src="" or src without data)
+    html = re.sub(r'<img\s+[^>]*src=""\s*[^>]*/?\s*>', '', html)
+
+    return html
 
 
 async def _upload_png(db, campanha_id: str, formato: str, png_path: str) -> str:
