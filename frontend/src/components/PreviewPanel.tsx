@@ -13,6 +13,16 @@ const tabs = [
   { key: "email", label: "E-mail", icon: "email", w: 600, h: 900 },
 ];
 
+function downloadHtml(peca: Peca) {
+  const blob = new Blob([peca.html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${peca.formato}_v${peca.versao}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function PreviewPanel({ pecas, onFormatoChange }: Props) {
   const [aba, setAba] = useState("story");
 
@@ -48,15 +58,29 @@ export default function PreviewPanel({ pecas, onFormatoChange }: Props) {
           </button>
         ))}
 
-        {/* Download */}
-        {pecaAtual?.arquivo_url && (
-          <a
-            href={pecaAtual.arquivo_url}
-            download
-            className="ml-auto mr-3 p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
-          </a>
+        {/* Downloads */}
+        {pecaAtual && (
+          <div className="ml-auto flex items-center gap-1 mr-3">
+            {/* Download HTML */}
+            <button
+              onClick={() => downloadHtml(pecaAtual)}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+              title="Baixar HTML"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>code</span>
+            </button>
+            {/* Download PNG (if available) */}
+            {pecaAtual.arquivo_url && (
+              <a
+                href={pecaAtual.arquivo_url}
+                download
+                className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                title="Baixar PNG"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>image</span>
+              </a>
+            )}
+          </div>
         )}
       </div>
 
@@ -90,7 +114,7 @@ export default function PreviewPanel({ pecas, onFormatoChange }: Props) {
               </div>
             )}
             <p className="text-center text-[10px] text-slate-600 mt-2">
-              Versao {pecaAtual.versao} — {tab.label}
+              Versão {pecaAtual.versao} — {tab.label} — {tab.w}×{tab.h}
             </p>
           </div>
         ) : (
@@ -98,8 +122,8 @@ export default function PreviewPanel({ pecas, onFormatoChange }: Props) {
             <span className="material-symbols-outlined text-slate-700 mb-2 block" style={{ fontSize: 40 }}>
               image
             </span>
-            <p className="text-sm text-slate-500">Nenhuma peca gerada</p>
-            <p className="text-xs text-slate-600 mt-1">A peca aparecera aqui apos a geracao</p>
+            <p className="text-sm text-slate-500">Nenhuma peça gerada</p>
+            <p className="text-xs text-slate-600 mt-1">A peça aparecerá aqui após a geração</p>
           </div>
         )}
       </div>
