@@ -39,3 +39,14 @@ app.include_router(campanhas.router, prefix="/campanhas", tags=["Campanhas"])
 @app.get("/")
 async def root():
     return {"status": "ok", "app": "DWV Campaign Studio API"}
+
+
+@app.get("/health")
+async def health():
+    """Debug endpoint to test DB connection."""
+    try:
+        d = db.get_db()
+        res = d.table("executivos").select("*").execute()
+        return {"db": "ok", "rows": len(res.data), "use_postgres": db.USE_POSTGRES, "has_db_url": bool(os.getenv("DATABASE_URL"))}
+    except Exception as e:
+        return {"db": "error", "detail": str(e), "use_postgres": db.USE_POSTGRES, "has_db_url": bool(os.getenv("DATABASE_URL"))}
