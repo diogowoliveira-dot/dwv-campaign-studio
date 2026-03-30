@@ -5,22 +5,16 @@ import sqlite3
 from uuid import uuid4
 from datetime import datetime, timezone
 
-DATABASE_URL = os.getenv("DATABASE_URL", "")
-# Fallback: build from individual vars if DATABASE_URL is truncated/broken
-if DATABASE_URL and "missing" not in DATABASE_URL:
-    # Quick validation
-    try:
-        assert "@" in DATABASE_URL and "/" in DATABASE_URL.split("@")[-1]
-    except (AssertionError, IndexError):
-        DATABASE_URL = ""
+# Prefer individual PG vars (avoids truncation issues with long URLs)
+_pg_host = os.getenv("PGHOST", "")
+_pg_user = os.getenv("PGUSER", "")
+_pg_pass = os.getenv("PGPASSWORD", "")
+_pg_db = os.getenv("PGDATABASE", "")
 
-if not DATABASE_URL:
-    _pg_host = os.getenv("PGHOST", "")
-    _pg_user = os.getenv("PGUSER", "")
-    _pg_pass = os.getenv("PGPASSWORD", "")
-    _pg_db = os.getenv("PGDATABASE", "")
-    if _pg_host and _pg_user:
-        DATABASE_URL = f"postgresql://{_pg_user}:{_pg_pass}@{_pg_host}/{_pg_db}?sslmode=require"
+if _pg_host and _pg_user:
+    DATABASE_URL = f"postgresql://{_pg_user}:{_pg_pass}@{_pg_host}/{_pg_db}?sslmode=require"
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 USE_POSTGRES = bool(DATABASE_URL)
