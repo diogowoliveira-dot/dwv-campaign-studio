@@ -9,6 +9,7 @@ from jinja2 import Environment, FileSystemLoader
 from services.copy_writer import gerar_copy
 from services.image_utils import get_b64, make_white_logo, precisa_inverter_logo, encode_exec_photo, auditar_logo
 from services.playwright_render import html_to_png
+from services.site_analyzer import analisar_site
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
 jinja_env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
@@ -474,8 +475,37 @@ async def coletar_assets(url_site: str) -> dict:
 async def gerar_campanha_completa(briefing: dict, executivo: dict, db, campanha_id: str) -> dict:
     """Gera todas as peças de uma campanha."""
 
-    # 1. Coletar assets do site do cliente (antes da copy para usar destaques)
-    assets = await coletar_assets(briefing.get("url_site", ""))
+    url_site = briefing.get("url_site", "")
+
+    # 1a. AI-powered site analysis (identifies fachada, brand colors, logos)
+    site_info = await analisar_site(url_site)
+
+    # 1b. Collect assets using both AI recommendations and scraping
+    assets = await coletar_assets(url_site)
+
+    # Override with AI-selected assets
+    if site_info.get("cor_primaria") and site_info["cor_primaria"] != "#C9A96E":
+        assets["cor_primaria"] = site_info["cor_primaria"]
+
+    if site_info.get("destaques"):
+        assets["destaques_site"] = site_info["destaques"]
+
+    # Download AI-selected fachada
+    if site_info.get("fachada_url"):
+        fachada_b64 = _try_download_image(site_info["fachada_url"], min_bytes=5000)
+        if fachada_b64:
+            assets["imagem_principal_b64"] = fachada_b64
+
+    # Download AI-selected logos
+    if site_info.get("logo_url"):
+        logo_b64 = _try_download_image(site_info["logo_url"], min_bytes=300)
+        if logo_b64:
+            assets["logo_incorporadora_b64"] = logo_b64
+
+    if site_info.get("logo_emp_url"):
+        logo_emp_b64 = _try_download_image(site_info["logo_emp_url"], min_bytes=300)
+        if logo_emp_b64:
+            assets["logo_empreendimento_b64"] = logo_emp_b64
 
     # 2. Gerar copy com Claude (enriquecida com dados do site)
     copy = await gerar_copy(briefing, executivo, destaques_site=assets.get("destaques_site", ""))
