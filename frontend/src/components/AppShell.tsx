@@ -39,7 +39,7 @@ export default function AppShell({
           <div className="flex items-center gap-3 min-w-0">
             {showBack && (
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push("/dashboard")}
                 className="p-1 -ml-1 text-slate-400 hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
@@ -62,8 +62,16 @@ export default function AppShell({
           <div className="flex items-center gap-1">
             {actions}
             <button
+              onClick={() => router.push("/dashboard")}
+              className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+              title="Início"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>home</span>
+            </button>
+            <button
               onClick={() => { logout(); router.push("/"); }}
               className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+              title="Sair"
             >
               <span className="material-symbols-outlined" style={{ fontSize: 20 }}>logout</span>
             </button>
