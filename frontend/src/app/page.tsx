@@ -14,6 +14,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) router.push("/dashboard");
+    // Pre-warm backend while user sees login screen
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/`, { mode: "no-cors" }).catch(() => {});
+    }
   }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
