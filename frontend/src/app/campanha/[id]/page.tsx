@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import ChatPanel from "@/components/ChatPanel";
 import PreviewPanel from "@/components/PreviewPanel";
@@ -8,12 +8,14 @@ import { campanhas, CampanhaCompleta, Mensagem } from "@/lib/api";
 
 export default function CampanhaPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [campanha, setCampanha] = useState<CampanhaCompleta | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [formato, setFormato] = useState("story");
   const [loading, setLoading] = useState(true);
+  const [regerando, setRegerando] = useState(false);
 
   const carregar = async () => {
     try {
@@ -31,8 +33,20 @@ export default function CampanhaPage() {
     carregar();
   }, [id]);
 
+  const handleRegerar = async () => {
+    if (!confirm("Regerar todas as peças com os templates atualizados?")) return;
+    setRegerando(true);
+    try {
+      await campanhas.gerar(id);
+      await carregar();
+    } catch (err) {
+      console.warn("Regeração falhou:", err);
+    } finally {
+      setRegerando(false);
+    }
+  };
+
   const handleEditar = async (texto: string) => {
-    // Adiciona mensagem do usuario localmente
     const userMsg: Mensagem = {
       id: `temp-${Date.now()}`,
       role: "user",
@@ -41,11 +55,9 @@ export default function CampanhaPage() {
     };
     setMensagens((prev) => [...prev, userMsg]);
 
-    // Pega o HTML atual da peça sendo editada para enviar ao Claude
     const pecaAtual = campanha?.pecas.find((p) => p.formato === formato);
     const response = await campanhas.editar(id, texto, formato, pecaAtual?.html, pecaAtual?.versao);
 
-    // Adiciona resposta do assistente
     const assistantMsg: Mensagem = {
       id: `temp-${Date.now()}-resp`,
       role: "assistant",
@@ -54,7 +66,6 @@ export default function CampanhaPage() {
     };
     setMensagens((prev) => [...prev, assistantMsg]);
 
-    // Atualiza peca (só se o backend retornou uma peça válida)
     if (campanha && response.peca?.html) {
       const pecasAtualizadas = campanha.pecas.map((p) =>
         p.formato === formato ? response.peca : p
@@ -90,7 +101,29 @@ export default function CampanhaPage() {
       icon="campaign"
       showBack
       hideNav
+      actions={
+        <button
+          onClick={handleRegerar}
+          disabled={regerando}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
+          title="Regerar peças com templates atualizados"
+        >
+          <span className={`material-symbols-outlined ${regerando ? "animate-spin" : ""}`} style={{ fontSize: 16 }}>
+            {regerando ? "progress_activity" : "refresh"}
+          </span>
+          {regerando ? "Regerando..." : "Regerar"}
+        </button>
+      }
     >
+      {/* Regerando overlay */}
+      {regerando && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center">
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-6" />
+          <p className="text-white font-semibold text-lg">Regerando materiais...</p>
+          <p className="text-slate-500 text-sm mt-2">Coletando assets e gerando copy atualizada</p>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row" style={{ height: "calc(100vh - 64px)" }}>
         {/* Chat */}
         <div className="lg:w-[400px] lg:border-r border-border-dark flex-shrink-0 h-1/2 lg:h-full">
