@@ -68,47 +68,62 @@ def _try_download_image(url: str, min_bytes: int = 2000) -> str:
 
 
 def _extract_colors_from_html(html: str) -> dict:
-    """Extract dominant colors from CSS in the HTML."""
+    """Extract dominant colors from CSS, inline styles, and color attributes."""
     colors = {"primaria": "", "fundo": ""}
 
     # 1. meta theme-color
-    m = re.search(r'<meta\s+[^>]*name\s*=\s*["\']theme-color["\'][^>]*content\s*=\s*["\']([^"\']+)["\']', html, re.I)
+    m = re.search(r'<meta\s+[^>]*name="theme-color"[^>]*content="([^"]+)"', html, re.I)
     if not m:
-        m = re.search(r'<meta\s+[^>]*content\s*=\s*["\']([^"\']+)["\'][^>]*name\s*=\s*["\']theme-color["\']', html, re.I)
+        m = re.search(r'<meta\s+[^>]*content="([^"]+)"[^>]*name="theme-color"', html, re.I)
     if m:
         colors["primaria"] = m.group(1).strip()
 
-    # 2. CSS custom properties (--primary, --color-primary, --brand, etc)
-    primary_patterns = [
+    # 2. CSS custom properties
+    for pat in [
         r'--(?:primary|brand|accent|main)[-_]?(?:color)?:\s*([#][0-9a-fA-F]{3,8})',
         r'--color[-_](?:primary|brand|accent):\s*([#][0-9a-fA-F]{3,8})',
-    ]
-    for pat in primary_patterns:
+    ]:
         m = re.search(pat, html, re.I)
         if m and not colors["primaria"]:
             colors["primaria"] = m.group(1)
 
-    # 3. Most common hex color in CSS (excluding black/white/grey)
+    # 3. Collect ALL hex colors from CSS + inline styles + color attributes
     if not colors["primaria"]:
         all_hex = re.findall(r'#([0-9a-fA-F]{6})\b', html)
+        # Also find rgb() colors
+        for m in re.finditer(r'rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)', html):
+            r_v, g_v, b_v = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            all_hex.append(f"{r_v:02x}{g_v:02x}{b_v:02x}")
+
         color_counts: dict = {}
         for h in all_hex:
             r_val, g_val, b_val = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
             # Skip near-black, near-white, greys
-            if max(r_val, g_val, b_val) < 40:
+            if max(r_val, g_val, b_val) < 50:
                 continue
-            if min(r_val, g_val, b_val) > 220:
+            if min(r_val, g_val, b_val) > 210:
                 continue
-            if abs(r_val - g_val) < 15 and abs(g_val - b_val) < 15:
+            if abs(r_val - g_val) < 20 and abs(g_val - b_val) < 20:
                 continue
             color_counts[f"#{h}"] = color_counts.get(f"#{h}", 0) + 1
         if color_counts:
             colors["primaria"] = max(color_counts, key=color_counts.get)
 
-    # 4. Background color from body/main
-    bg_match = re.search(r'body\s*\{[^}]*background(?:-color)?:\s*([#][0-9a-fA-F]{3,8})', html, re.I)
+    # 4. Background color
+    bg_match = re.search(r'body[^{]*\{[^}]*background(?:-color)?:\s*([#][0-9a-fA-F]{3,8})', html, re.I)
     if bg_match:
         colors["fundo"] = bg_match.group(1)
+
+    # 5. If site is predominantly black/white (no accent color found),
+    #    use a clean neutral palette
+    if not colors["primaria"]:
+        # Check if site is dark-themed
+        dark_indicators = html.lower().count("background:#000") + html.lower().count("background-color:#000") + html.lower().count("background:black")
+        if dark_indicators > 0:
+            colors["primaria"] = "#FFFFFF"  # White accent on dark site
+            colors["fundo"] = "#000000"
+        else:
+            colors["primaria"] = "#1a1a1a"  # Dark accent on light site
 
     return colors
 
@@ -334,47 +349,80 @@ async def coletar_assets(url_site: str) -> dict:
                 assets["cor_fundo"] = site_colors["fundo"]
 
             # ============================================================
-            # PHASE 5: Extract text content for enriched copy
+            # PHASE 5: Deep content extraction for enriched copy
             # ============================================================
-            headings = []
-            heading_re = re.compile(r'<h[1-3][^>]*>(.*?)</h[1-3]>', re.I | re.DOTALL)
-            for m in heading_re.finditer(html):
-                text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
-                if text and 3 < len(text) < 200:
-                    headings.append(text)
+            text_content = re.sub(r'<script[^>]*>.*?</script>', ' ', html, flags=re.I | re.DOTALL)
+            text_content = re.sub(r'<style[^>]*>.*?</style>', ' ', text_content, flags=re.I | re.DOTALL)
+            text_content = re.sub(r'<[^>]+>', ' ', text_content)
+            text_content = re.sub(r'\s+', ' ', text_content).strip()
 
+            # Headings
+            headings = []
+            for m in re.finditer(r'<h[1-4][^>]*>(.*?)</h[1-4]>', html, re.I | re.DOTALL):
+                t = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+                if t and 3 < len(t) < 300:
+                    headings.append(t)
+
+            # Specs (all occurrences)
             specs = []
-            text_content = re.sub(r'<[^>]+>', ' ', html)
-            for pattern in [
-                r'(\d+)\s*(?:dormit[óo]rios?|dorms?)',
-                r'(\d+)\s*(?:su[íi]tes?)',
-                r'(\d+[\.,]?\d*)\s*m[²2]',
-                r'(\d+)\s*(?:vagas?|garagens?)',
-                r'(\d+)\s*(?:torres?)',
-                r'(\d+)\s*(?:andares?|pavimentos?)',
-                r'(\d+)\s*(?:unidades?)',
-                r'(\d+)\s*(?:quartos?)',
-            ]:
+            spec_patterns = [
+                (r'(\d+)\s*(?:dormit[óo]rios?|dorms?)', 'dormitórios'),
+                (r'(\d+)\s*(?:su[íi]tes?)', 'suítes'),
+                (r'(\d+[\.,]?\d*)\s*m[²2]', 'm²'),
+                (r'(\d+)\s*(?:vagas?|garagens?)', 'vagas'),
+                (r'(\d+)\s*(?:torres?)', 'torres'),
+                (r'(\d+)\s*(?:andares?\s+de\s+apartamentos?)', 'andares'),
+                (r'(\d+)\s*(?:pavimentos?)', 'pavimentos'),
+                (r'(\d+)\s*(?:unidades?|apartamentos?)', 'unidades'),
+                (r'(\d+)\s*(?:quartos?)', 'quartos'),
+            ]
+            for pattern, label in spec_patterns:
                 m = re.search(pattern, text_content, re.I)
                 if m:
                     specs.append(m.group(0).strip())
 
+            # People (architects, designers, landscapers)
+            people = []
+            people_patterns = [
+                r'(?:arquitet[oa]|designer|paisagis[tm]a)[^.]{0,10}:\s*([A-ZÀ-Ú][a-zà-ú]+ [A-ZÀ-Ú][a-zà-ú]+)',
+                r'([A-ZÀ-Ú][a-zà-ú]+ [A-ZÀ-Ú][a-zà-ú]+)\s*(?:é|são)\s*(?:arquitet|designer|paisagis)',
+                r'(?:Studio|Estúdio|Escritório)\s+([A-ZÀ-Ú][a-zà-ú]+ [A-ZÀ-Ú][a-zà-ú]+)',
+                r'(?:assinad[oa]\s+(?:por|pelo|pela))\s+([A-ZÀ-Ú][^\.,]{3,40})',
+                r'(?:projeto\s+(?:de|do|da))\s+[A-Za-zÀ-ú\s]+(?:assinad[oa]\s+(?:por|pelo|pela))\s+([A-ZÀ-Ú][^\.,]{3,40})',
+            ]
+            for pattern in people_patterns:
+                for m in re.finditer(pattern, text_content, re.I):
+                    name = m.group(1).strip()
+                    if name and len(name) > 5 and name not in people:
+                        people.append(name)
+
+            # Descriptive paragraphs (non-trivial text blocks)
+            paragraphs = []
+            for m in re.finditer(r'<p[^>]*>(.*?)</p>', html, re.I | re.DOTALL):
+                t = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+                if len(t) > 40 and len(t) < 500:
+                    paragraphs.append(t)
+
+            # Meta description
             meta_desc = ""
-            meta_match = re.search(
-                r'<meta\s+[^>]*name\s*=\s*["\']description["\'][^>]*content\s*=\s*["\']([^"\']+)["\']', html, re.I
-            ) or re.search(
-                r'<meta\s+[^>]*content\s*=\s*["\']([^"\']+)["\'][^>]*name\s*=\s*["\']description["\']', html, re.I
-            )
+            meta_match = re.search(r'<meta\s+[^>]*name="description"[^>]*content="([^"]+)"', html, re.I)
+            if not meta_match:
+                meta_match = re.search(r'<meta\s+[^>]*content="([^"]+)"[^>]*name="description"', html, re.I)
             if meta_match:
                 meta_desc = meta_match.group(1).strip()
 
+            # Build comprehensive destaques
             destaques = []
             if headings:
-                destaques.append("Headlines do site: " + " | ".join(headings[:6]))
+                destaques.append("HEADLINES DO SITE: " + " | ".join(headings[:8]))
             if specs:
-                destaques.append("Configurações do imóvel: " + ", ".join(specs))
+                destaques.append("ESPECIFICAÇÕES: " + ", ".join(specs))
+            if people:
+                destaques.append("PROFISSIONAIS/ASSINATURAS: " + ", ".join(people))
+            if paragraphs:
+                destaques.append("TEXTOS DESCRITIVOS DO SITE:\n" + "\n".join(f"- {p}" for p in paragraphs[:6]))
             if meta_desc:
-                destaques.append("Descrição: " + meta_desc)
+                destaques.append("META DESCRIPTION: " + meta_desc)
 
             assets["destaques_site"] = "\n".join(destaques)
 
