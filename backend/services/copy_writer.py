@@ -1,4 +1,4 @@
-"""Geração de copy via Anthropic API — skills de copywriter profissional."""
+"""Geração de copy via Anthropic API — skill dwv-copy-writer integrada."""
 
 import os
 import json
@@ -11,12 +11,14 @@ PALAVRAS_PROIBIDAS = ["incrível", "imperdível", "oportunidade única", "sonho 
 
 
 async def _call_claude(prompt: str, max_tokens: int = 2000) -> str:
-    """Call Claude API and return text response."""
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return ""
     async with httpx.AsyncClient(timeout=60) as http:
         response = await http.post(
             "https://api.anthropic.com/v1/messages",
             headers={
-                "x-api-key": ANTHROPIC_API_KEY,
+                "x-api-key": api_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             },
@@ -37,121 +39,107 @@ async def _call_claude(prompt: str, max_tokens: int = 2000) -> str:
 
 
 async def gerar_copy(briefing: dict, executivo: dict, destaques_site: str = "") -> dict:
-    """Gera copy profissional para story, post e email.
+    """Gera copy seguindo a skill dwv-copy-writer.
 
-    Usa prompts especializados por formato:
-    - Story: copywriter de social media (conciso, impactante)
-    - Post: copywriter de social media (um pouco mais descritivo)
-    - Email: redator de marketing direto (detalhado, persuasivo, informativo)
+    Pipeline: Copy base → Adaptação Story → Adaptação Post → Adaptação Email
+    Tom DWV: direto, confiante, profissional, humano. Sem hipérboles.
     """
 
-    contexto_base = f"""BRIEFING DA CAMPANHA:
+    contexto = f"""BRIEFING:
 Tipo: {briefing.get('tipo', 'lancamento')}
 Incorporadora: {briefing.get('cliente', '')}
 Empreendimento: {briefing.get('empreendimento', '')}
-Mensagem/objetivo: {briefing.get('copy_base', '')}
+Mensagem: {briefing.get('copy_base', '')}
 Executivo: {executivo.get('nome', '')} — {executivo.get('cargo', 'Executivo de Parcerias')} · {briefing.get('cliente', '')}
-{"Data do evento: " + briefing.get('data_evento', '') if briefing.get('data_evento') else ''}
+{"Data evento: " + briefing.get('data_evento', '') if briefing.get('data_evento') else ''}
 {"Local: " + briefing.get('local_evento', '') if briefing.get('local_evento') else ''}
+{chr(10) + "DADOS DO SITE:" + chr(10) + destaques_site if destaques_site else ''}
 
-{"INFORMAÇÕES DO SITE DO EMPREENDIMENTO:" + chr(10) + destaques_site if destaques_site else ''}
+TOM DWV:
+- Direto: sem rodeios, sem jargão vazio
+- Confiante: números reais, dados concretos, sem hipérboles
+- Profissional: linguagem do mercado imobiliário, não de vendas de varejo
+- Humano: o executivo assina, não a marca — tom pessoal e acessível
+- NUNCA usar: {', '.join(PALAVRAS_PROIBIDAS)}
+- NUNCA inventar dados — só usar o que vem do briefing e do site
+- NUNCA mencionar DWV"""
 
-REGRAS ABSOLUTAS:
-- Cargo do executivo: "{executivo.get('cargo', 'Executivo de Parcerias')} · {briefing.get('cliente', '')}"
-- NUNCA mencionar DWV
-- NUNCA inventar dados — use APENAS informações do briefing e do site
-- NUNCA usar estas palavras/expressões: {', '.join(PALAVRAS_PROIBIDAS)}
-- Se há nomes de arquitetos, paisagistas ou designers mencionados no site, DESTAQUE-OS
-- Se há especificações (m², suítes, pavimentos, vagas), USE-AS
-- Tom: sofisticado, direto, premium. Linguagem de alto padrão imobiliário."""
+    prompt = f"""Você é o copywriter sênior da DWV, especializado em campanhas imobiliárias de alto padrão.
 
-    # === STORY (Instagram Story - 1080x1920) ===
-    story_prompt = f"""Você é um copywriter sênior especializado em stories de Instagram para o mercado imobiliário de alto padrão.
+{contexto}
 
-{contexto_base}
+Gere a copy adaptada para TRÊS formatos. Siga EXATAMENTE estas regras:
 
-Gere a copy para um STORY vertical (1080x1920). O espaço é limitado — cada palavra conta.
+━━━ STORY (consumido em 1-2 segundos) ━━━
+- headline: máx 5 palavras. Impacto tipográfico. Sem ponto final.
+- subtitulo: máx 8 palavras. Dado concreto do empreendimento.
+- cta: 2-3 palavras. Verbo de ação. Ex: "Fale conosco", "Saiba mais", "Confirme presença"
+- tagline: 1 frase curta aspiracional/emocional sobre o empreendimento (opcional, max 8 palavras)
 
-DIRETRIZES DE STORY:
-- Headline: máximo 6 palavras. Deve criar curiosidade ou exclusividade. Nada genérico.
-- Subtítulo: máximo 12 palavras. Complementa o headline com um dado concreto do empreendimento.
-- CTA: máximo 3 palavras. Verbo de ação direto.
-- Use dados reais: se o site menciona "29 pavimentos" ou "4 suítes", USE no subtítulo.
-- O headline deve soar como algo que um corretor pararia para ler.
+━━━ POST INSTAGRAM (arte + legenda) ━━━
+- headline: máx 7 palavras. Na arte, dentro da imagem.
+- subtitulo: 1-2 linhas, máx 15 palavras. Complementa headline.
+- cta: texto do botão CTA na arte
+- legenda: texto completo para a legenda do Instagram (max 200 chars).
+  Estrutura: gancho forte → 2-3 frases → bullet points com dados → CTA com instrução
 
-Retorne APENAS este JSON:
-{{"headline": "...", "subtitulo": "...", "cta": "..."}}"""
+━━━ EMAIL MARKETING (150-400 palavras no corpo) ━━━
+- assunto: máx 55 caracteres. Com dado concreto. Nunca caixa alta total.
+- preview: máx 90 caracteres. Complementa o assunto.
+- titulo: frase aspiracional principal do email.
+- corpo: 3-4 parágrafos em HTML com tags <p>. DEVE incluir:
+  * P1: Abertura com gancho (2-3 frases)
+  * P2: Produto — TODOS os dados disponíveis: m², suítes, pavimentos, vista, arquitetos com <strong>
+  * P3: Proposta de valor para o corretor
+  * P4 (se evento): urgência + detalhes do evento
+  Cada <p> com: style="margin:0 0 16px;font-size:16px;line-height:1.75;color:rgba(255,255,255,0.65);font-family:Arial,sans-serif;"
+  Dados em: <strong style="color:#fff">
+- cta: texto do botão. Max 4 palavras. Verbo ativo.
 
-    # === POST (Instagram Feed - 1080x1080) ===
-    post_prompt = f"""Você é um copywriter sênior especializado em posts de Instagram para o mercado imobiliário de alto padrão.
+Retorne APENAS este JSON (sem markdown, sem explicação):
+{{
+  "story": {{"headline": "...", "subtitulo": "...", "cta": "...", "tagline": "..."}},
+  "post": {{"headline": "...", "subtitulo": "...", "cta": "...", "legenda": "..."}},
+  "email": {{"assunto": "...", "preview": "...", "titulo": "...", "corpo": "<p>...</p><p>...</p><p>...</p>", "cta": "..."}}
+}}"""
 
-{contexto_base}
-
-Gere a copy para um POST quadrado (1080x1080). Mais espaço que story, mas ainda visual.
-
-DIRETRIZES DE POST:
-- Headline: máximo 8 palavras. Frase de impacto que destaque o diferencial principal.
-- Subtítulo: máximo 18 palavras. Inclua especificações reais (metragem, suítes, assinatura arquitetônica).
-- Legenda: texto para a legenda do Instagram, máximo 200 caracteres. Inclua chamada para ação.
-- Se há arquitetos renomados, mencione no subtítulo.
-- Use linguagem que transmita exclusividade e sofisticação.
-
-Retorne APENAS este JSON:
-{{"headline": "...", "subtitulo": "...", "legenda": "..."}}"""
-
-    # === EMAIL (Marketing direto - 600px) ===
-    email_prompt = f"""Você é um redator de email marketing especializado no mercado imobiliário de alto padrão.
-Você escreve como os melhores redatores de marcas como Cyrela, JHSF e Fasano.
-
-{contexto_base}
-
-Gere a copy para um EMAIL MARKETING profissional. Aqui você tem espaço para contar uma história.
-
-DIRETRIZES DE EMAIL:
-- Assunto: máximo 50 caracteres. Deve gerar abertura. Pode usar o nome do empreendimento.
-- Preview: texto que aparece na inbox, máximo 80 caracteres.
-- Título: frase principal do email, aspiracional e direta.
-- Corpo: 3-4 parágrafos em HTML (<p>). DEVE incluir:
-  * Parágrafo 1: Abertura que posicione o empreendimento como exclusivo. Mencione a incorporadora.
-  * Parágrafo 2: Detalhes do produto — use TODOS os dados disponíveis: metragem, suítes, pavimentos,
-    vagas, vista. Se houver nomes de arquitetos, paisagistas ou designers, DESTAQUE com <strong>.
-  * Parágrafo 3: Proposta de valor para o corretor — por que ele deveria se interessar.
-  * Parágrafo 4 (se evento): Detalhes do evento com urgência.
-- CTA: texto do botão, máximo 4 palavras.
-- Cada <p> deve ter style="margin:0 0 16px;font-size:16px;line-height:1.75;color:rgba(255,255,255,0.65);font-family:Arial,sans-serif;"
-- Nomes próprios e dados numéricos em <strong style="color:#fff">
-
-Retorne APENAS este JSON:
-{{"assunto": "...", "preview": "...", "titulo": "...", "corpo": "<p>...</p><p>...</p><p>...</p>", "cta": "..."}}"""
-
-    # Execute all 3 in parallel-ish (sequential for API rate limits)
-    story_text = await _call_claude(story_prompt, 500)
-    post_text = await _call_claude(post_prompt, 600)
-    email_text = await _call_claude(email_prompt, 2000)
+    raw = await _call_claude(prompt, 2500)
 
     try:
-        story = json.loads(story_text)
+        copy = json.loads(raw)
     except json.JSONDecodeError:
-        story = {"headline": "Exclusivo para parceiros", "subtitulo": briefing.get("empreendimento", ""), "cta": "Saiba mais"}
+        # Try to extract JSON from response
+        import re
+        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if json_match:
+            try:
+                copy = json.loads(json_match.group(0))
+            except json.JSONDecodeError:
+                copy = _fallback_copy(briefing)
+        else:
+            copy = _fallback_copy(briefing)
 
-    try:
-        post = json.loads(post_text)
-    except json.JSONDecodeError:
-        post = {"headline": "Exclusivo para parceiros", "subtitulo": briefing.get("empreendimento", ""), "legenda": ""}
-
-    try:
-        email = json.loads(email_text)
-    except json.JSONDecodeError:
-        email = {"assunto": briefing.get("empreendimento", ""), "preview": "", "titulo": "Um convite exclusivo",
-                 "corpo": f"<p>{briefing.get('copy_base', '')}</p>", "cta": "Saiba mais"}
-
-    copy = {
-        "story": _validar_copy(story),
-        "post": _validar_copy(post),
-        "email": _validar_copy(email),
-    }
+    # Validate and clean
+    for fmt in ("story", "post", "email"):
+        if fmt not in copy:
+            copy[fmt] = {}
+        copy[fmt] = _validar_copy(copy[fmt])
 
     return copy
+
+
+def _fallback_copy(briefing: dict) -> dict:
+    """Fallback copy when AI fails."""
+    emp = briefing.get("empreendimento", "Empreendimento")
+    cli = briefing.get("cliente", "")
+    return {
+        "story": {"headline": f"Conheça o {emp}", "subtitulo": f"Exclusivo para corretores · {cli}", "cta": "Saiba mais"},
+        "post": {"headline": f"Conheça o {emp}", "subtitulo": f"Exclusivo para corretores parceiros · {cli}", "cta": "Saiba mais", "legenda": ""},
+        "email": {"assunto": f"{emp} — convite exclusivo", "preview": f"Conheça o {emp} em primeira mão",
+                  "titulo": "Um convite exclusivo para você",
+                  "corpo": f'<p style="margin:0 0 16px;font-size:16px;line-height:1.75;color:rgba(255,255,255,0.65);font-family:Arial,sans-serif;">{briefing.get("copy_base", "")}</p>',
+                  "cta": "Saiba mais"},
+    }
 
 
 def _validar_copy(copy: dict) -> dict:
@@ -168,15 +156,12 @@ def _validar_copy(copy: dict) -> dict:
                 idx = lower.find(palavra.lower())
         return resultado.strip()
 
-    def limpar_dict(d: dict) -> dict:
-        cleaned = {}
-        for k, v in d.items():
-            if isinstance(v, str):
-                cleaned[k] = limpar(v)
-            elif isinstance(v, dict):
-                cleaned[k] = limpar_dict(v)
-            else:
-                cleaned[k] = v
-        return cleaned
-
-    return limpar_dict(copy)
+    cleaned = {}
+    for k, v in copy.items():
+        if isinstance(v, str):
+            cleaned[k] = limpar(v)
+        elif isinstance(v, dict):
+            cleaned[k] = _validar_copy(v)
+        else:
+            cleaned[k] = v
+    return cleaned
