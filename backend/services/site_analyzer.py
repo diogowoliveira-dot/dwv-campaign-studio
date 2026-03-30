@@ -6,15 +6,15 @@ import httpx
 import base64
 from urllib.parse import urljoin, urlparse
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-
-
 async def _call_claude(prompt: str, max_tokens: int = 1500) -> str:
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return ""
     async with httpx.AsyncClient(timeout=60) as http:
         response = await http.post(
             "https://api.anthropic.com/v1/messages",
             headers={
-                "x-api-key": ANTHROPIC_API_KEY,
+                "x-api-key": api_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             },
@@ -201,7 +201,7 @@ CONTEÚDO TEXTUAL DO SITE:
 {text_emp[:2000]}
 
 CORES HEX ENCONTRADAS NO CSS:
-{', '.join(set(re.findall(r'#[0-9a-fA-F]{{6}}', html_emp + html_home))[:20]) or 'Nenhuma cor encontrada no CSS'}
+{', '.join(list(set(re.findall(r'#[0-9a-fA-F]{{6}}', html_emp + html_home)))[:20]) or 'Nenhuma cor encontrada no CSS'}
 
 ANALISE E RESPONDA:
 
@@ -275,7 +275,8 @@ RESPONDA APENAS ESTE JSON (sem explicação, sem markdown):
             if logo_emp_idx and 0 < logo_emp_idx <= len(all_image_urls):
                 result["logo_emp_url"] = all_image_urls[logo_emp_idx - 1]
 
-    except Exception:
-        pass
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
 
     return result
