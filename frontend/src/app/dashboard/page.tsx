@@ -36,7 +36,7 @@ export default function DashboardPage() {
   };
 
   // Group by client (incorporadora)
-  const clientes = [...new Set(lista.map((c) => c.cliente))].sort();
+  const clientes = Array.from(new Set(lista.map((c) => c.cliente))).sort();
   const filtradas = filtroCliente
     ? lista.filter((c) => c.cliente === filtroCliente)
     : lista;
